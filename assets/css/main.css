@@ -264,6 +264,36 @@ code, pre, kbd, samp {
 
 .prose pre code { background: none; border: none; padding: 0; color: inherit; }
 
+/* standalone fenced code blocks — language label via render-codeblock.html hook */
+
+.code-block {
+  position: relative;
+  margin: 1.4rem 0;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.code-block .chroma {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+}
+
+.code-block__lang {
+  position: absolute;
+  top: 0.65rem;
+  right: 1rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
 .prose img { max-width: 100%; border-radius: 8px; }
 
 .prose hr {
@@ -325,14 +355,49 @@ img-comparison-slider.code-slider {
   --divider-color: var(--cyan);
   --default-handle-color: var(--cyan);
   --default-handle-opacity: 0.9;
+  display: block;
+  width: 100%;
+  height: 420px;
+  --pane-height: 420px;
+}
+
+@media (max-width: 640px) {
+  img-comparison-slider.code-slider {
+    height: 320px;
+    --pane-height: 320px;
+  }
 }
 
 .code-pane {
+  /* The component's "first" pane wrapper chain is all explicit height:100%,
+     which correctly resolves against the host height above — but its
+     "second" pane wrapper is just `position:relative` with NO height set,
+     and there's no ::part() hook to reach it. A percentage height on our
+     slotted figure would resolve against that undefined ancestor height
+     and collapse. Positioning the figure itself absolutely, sized with a
+     plain px value (inherited as a custom property, which crosses into
+     slotted content even though the shadow tree renders it elsewhere),
+     sidesteps the missing ancestor height entirely — both panes end up
+     pinned to the same explicit box regardless of the shadow internals. */
+  position: absolute;
+  inset: 0;
   margin: 0;
   width: 100%;
+  height: var(--pane-height);
+  display: flex;
+  flex-direction: column;
+  /* The component's shadow stylesheet sets `:host{ line-height: 0 }` on
+     itself, and slotted content inherits computed properties from its real
+     light-DOM parent — this element's actual parent, the host. A single
+     line (the figcaption) doesn't visibly break, but every line of the
+     chroma <pre> collapses onto the previous one. Set a normal line-height
+     here so it overrides that inherited 0 for this figure and everything
+     inside it. */
+  line-height: 1.6;
 }
 
 .code-pane figcaption {
+  flex: 0 0 auto;
   font-family: var(--mono);
   font-size: 0.72rem;
   letter-spacing: 0.08em;
@@ -347,12 +412,13 @@ img-comparison-slider.code-slider {
 .code-pane[slot="second"] figcaption { background: var(--green); }
 
 .code-pane .chroma {
+  flex: 1 1 auto;
+  min-height: 0;
   margin: 0;
   border-radius: 0;
   border: none;
   padding: 1rem 1.1rem;
   font-size: 0.86rem;
-  max-height: 480px;
   overflow: auto;
 }
 

@@ -1,0 +1,6 @@
+{{- $lang := . -}}
+{{- $skip := slice "" "text" -}}
+{{- if not (in $skip $lang) -}}
+  {{- $labels := dict "cpp" "C++" "python" "Python" "c" "C" "sh" "Shell" "llvm" "LLVM IR" -}}
+  {{- with index $labels $lang -}}{{ . }}{{- else -}}{{ upper $lang }}{{- end -}}
+{{- end -}}

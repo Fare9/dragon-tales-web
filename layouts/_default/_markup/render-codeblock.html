@@ -1,0 +1,6 @@
+{{- $lang := .Type -}}
+{{- $label := partial "lang-label.html" $lang -}}
+<div class="code-block">
+  {{- with $label }}<span class="code-block__lang">{{ . }}</span>{{ end -}}
+  {{ transform.Highlight .Inner $lang "" }}
+</div>
