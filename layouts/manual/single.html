@@ -1,0 +1,22 @@
+{{ define "main" }}
+<div class="manual-layout">
+  {{ partial "manual-sidebar.html" . }}
+  <article class="prose">
+    <h1>{{ .Title }}</h1>
+    {{ .Content }}
+
+    <nav class="chapter-pager">
+      {{ with .NextInSection }}
+        <a class="prev" href="{{ .RelPermalink }}">
+          <span class="dir">← previous</span>{{ .LinkTitle }}
+        </a>
+      {{ end }}
+      {{ with .PrevInSection }}
+        <a class="next" href="{{ .RelPermalink }}">
+          <span class="dir">next →</span>{{ .LinkTitle }}
+        </a>
+      {{ end }}
+    </nav>
+  </article>
+</div>
+{{ end }}

@@ -1,0 +1,14 @@
+{{ $current := . }}
+{{ $section := .Site.GetPage "manual" }}
+<aside class="manual-sidebar">
+  <h4>The Manual</h4>
+  <ol>
+    {{ range $section.Pages.ByWeight }}
+      <li>
+        <a href="{{ .RelPermalink }}" {{ if eq .RelPermalink $current.RelPermalink }}class="active"{{ end }}>
+          {{ .LinkTitle }}
+        </a>
+      </li>
+    {{ end }}
+  </ol>
+</aside>

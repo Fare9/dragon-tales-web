@@ -1,0 +1,19 @@
+{{ define "main" }}
+<div class="manual-layout">
+  {{ partial "manual-sidebar.html" . }}
+  <div class="prose">
+    <h1>{{ .Title }}</h1>
+    {{ .Content }}
+    <ol class="chapter-list">
+      {{ range .Pages.ByWeight }}
+        <li>
+          <a href="{{ .RelPermalink }}">
+            <span class="num">{{ printf "%02d" .Weight }}</span>{{ .LinkTitle }}
+            {{ with .Params.summary }}<span class="desc">{{ . }}</span>{{ end }}
+          </a>
+        </li>
+      {{ end }}
+    </ol>
+  </div>
+</div>
+{{ end }}

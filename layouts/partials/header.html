@@ -1,0 +1,14 @@
+<header class="site-header">
+  <div class="site-header__inner">
+    <a class="brand" href="{{ "/" | relLangURL }}">
+      <img class="brand__icon" src="{{ "img/dragon-logo.png" | relURL }}" alt="">
+      <span class="brand__prompt">$</span> dragon-tales
+    </a>
+    <nav class="main-nav">
+      {{ range .Site.Menus.main }}
+        {{ $active := or ($.IsMenuCurrent "main" .) ($.HasMenuCurrent "main" .) }}
+        <a href="{{ .URL }}" {{ if $active }}class="active"{{ end }}>{{ .Name }}</a>
+      {{ end }}
+    </nav>
+  </div>
+</header>

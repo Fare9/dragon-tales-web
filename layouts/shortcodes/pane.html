@@ -1,0 +1,8 @@
+{{ $lang := .Get "lang" }}
+{{ $slot := .Get "slot" }}
+{{ $labels := dict "cpp" "C++" "python" "Python" "c" "C" "sh" "Shell" }}
+{{ $label := .Get "label" | default (index $labels $lang) | default (title $lang) }}
+<figure slot="{{ $slot }}" class="code-pane">
+<figcaption>{{ $label }}</figcaption>
+{{ highlight (trim .Inner "\n") $lang "" }}
+</figure>

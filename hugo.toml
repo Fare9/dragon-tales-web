@@ -1,0 +1,41 @@
+baseURL = "https://fare9.github.io/dragon-tales-web/"
+locale = "en-us"
+title = "dragon-tales"
+theme = []
+
+enableRobotsTXT = true
+enableEmoji = false
+disableKinds = ["taxonomy", "term"]
+
+[params]
+  tagline = "a binary analysis library, cross-architecture, built on LLVM"
+  github = "https://github.com/Fare9/dragon-tales"
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+  [markup.highlight]
+    style = "monokai"
+    noClasses = false
+    lineNos = false
+    codeFences = true
+    guessSyntax = false
+    tabWidth = 4
+
+[menu]
+  [[menu.main]]
+    name = "Home"
+    url = "/"
+    weight = 10
+  [[menu.main]]
+    name = "Manual"
+    url = "/manual/"
+    weight = 20
+  [[menu.main]]
+    name = "GitHub"
+    url = "https://github.com/Fare9/dragon-tales"
+    weight = 30
+
+[outputs]
+  home = ["HTML", "RSS"]

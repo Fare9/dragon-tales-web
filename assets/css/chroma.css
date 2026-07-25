@@ -1,0 +1,100 @@
+/* Chroma syntax highlighting — dragon-tales navy/blue palette */
+
+.chroma {
+  color: #cddbf0;
+  background-color: #0d1420;
+}
+
+.chroma .lnt,
+.chroma .ln {
+  color: #3a4a6b;
+  margin-right: 0.6em;
+  padding: 0 0.6em 0 0.4em;
+  user-select: none;
+}
+
+.chroma .hl { background-color: #182238; }
+.chroma .err { color: #ff6b6b; }
+
+/* Keywords */
+.chroma .k,
+.chroma .kd,
+.chroma .kn,
+.chroma .kp,
+.chroma .kr,
+.chroma .kc,
+.chroma .ow {
+  color: #59aae8;
+  font-weight: 600;
+}
+
+.chroma .kt { color: #2ad4ff; }
+
+/* Names */
+.chroma .nf { color: #2ad4ff; }
+.chroma .nc { color: #6fd7a3; }
+.chroma .nb,
+.chroma .bp { color: #2a96e2; }
+.chroma .nn { color: #cddbf0; }
+.chroma .nv,
+.chroma .vm,
+.chroma .vi { color: #cddbf0; }
+.chroma .na { color: #6fd7a3; }
+.chroma .no { color: #e8b769; }
+.chroma .nd { color: #e8b769; }
+.chroma .nl { color: #2ad4ff; }
+.chroma .ni { color: #e8b769; }
+.chroma .ne { color: #ff9f6b; }
+.chroma .nt { color: #59aae8; }
+
+/* Strings */
+.chroma .s,
+.chroma .s1,
+.chroma .s2,
+.chroma .sa,
+.chroma .sb,
+.chroma .sc,
+.chroma .sd,
+.chroma .se,
+.chroma .sh,
+.chroma .si,
+.chroma .sx,
+.chroma .sr,
+.chroma .ss {
+  color: #6fd7a3;
+}
+
+/* Numbers */
+.chroma .m,
+.chroma .mb,
+.chroma .mf,
+.chroma .mh,
+.chroma .mi,
+.chroma .mo {
+  color: #e8b769;
+}
+
+/* Comments */
+.chroma .c,
+.chroma .c1,
+.chroma .cm,
+.chroma .ch,
+.chroma .cs {
+  color: #5b6d8f;
+  font-style: italic;
+}
+
+/* Preprocessor (#include, etc.) */
+.chroma .cp,
+.chroma .cpf {
+  color: #e8b769;
+  font-style: normal;
+}
+
+/* Punctuation / operators */
+.chroma .p { color: #8ba3c7; }
+.chroma .o { color: #2ad4ff; }
+
+.chroma .gd { color: #ff6b6b; }
+.chroma .gi { color: #6fd7a3; }
+.chroma .gh { color: #7f93b3; }

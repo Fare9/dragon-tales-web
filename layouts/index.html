@@ -1,0 +1,72 @@
+{{ define "main" }}
+<div class="page">
+
+  <section class="hero">
+    <img class="hero__badge" src="{{ "img/dragon-logo.png" | relURL }}" alt="dragon-tales logo">
+    <div class="hero__eyebrow">$ whoami</div>
+    <h1 class="hero__title">dragon-tales<span class="cursor">&nbsp;</span></h1>
+    <p class="hero__tagline">{{ .Site.Params.tagline }}. Disassemble, assemble, lift to
+      an architecture-independent IL, and slice — from C++, from Python, from C.</p>
+    <div class="arch-badges">
+      <span class="arch-badge">x86-32</span>
+      <span class="arch-badge">x86-64</span>
+      <span class="arch-badge">ARM32</span>
+      <span class="arch-badge">ARM64</span>
+      <span class="arch-badge">RISC-V 32</span>
+      <span class="arch-badge">RISC-V 64</span>
+    </div>
+    <div class="hero__cta">
+      <a class="btn btn--primary" href="{{ "manual/" | relURL }}">Read the manual →</a>
+      <a class="btn btn--ghost" href="{{ .Site.Params.github }}">View on GitHub</a>
+    </div>
+  </section>
+
+  <section class="prologue">
+    <span class="prologue__rule"></span>
+    <p>Some tales tell of heroes. This one tells of older things — the archaic
+      tongues machines have spoken to each other since long before anyone
+      thought to read them back. We call it <em>assembly</em>: dense,
+      irregular, one dialect per silicon lineage — x86's guttural muttering,
+      ARM's disciplined verse, RISC-V's still-forming grammar.</p>
+    <p>dragon-tales was built to read them. To decode the runes byte by
+      byte, trace their lineage through blocks and functions, and set them
+      down in a single shared tongue — <strong>IGNIL</strong> — so a story
+      once told only in x86, or only in ARM, can finally be read, optimized,
+      and understood as one.</p>
+    <span class="prologue__rule"></span>
+  </section>
+
+  <p class="section-title">what it does</p>
+  <div class="features">
+    <div class="feature">
+      <h3>Disassembly</h3>
+      <p>Linear sweep and recursive traversal, across six architectures, built on LLVM's MC layer.</p>
+    </div>
+    <div class="feature">
+      <h3>CFG &amp; function recovery</h3>
+      <p>Turns a flat instruction stream into basic blocks, functions, and a control-flow graph.</p>
+    </div>
+    <div class="feature">
+      <h3>IGNIL</h3>
+      <p>A lightweight, architecture-independent intermediate language every backend lifts into.</p>
+    </div>
+    <div class="feature">
+      <h3>LLVM IR</h3>
+      <p>Move from IGNIL into optimizable LLVM IR for further analysis or transformation.</p>
+    </div>
+    <div class="feature">
+      <h3>Backward slicer</h3>
+      <p>Propagates values through IGNIL CFGs without crossing join nodes — trace a flag or register back to its source.</p>
+    </div>
+    <div class="feature">
+      <h3>C++, C, Python</h3>
+      <p>A C++ core, an opaque-pointer C shim, and cffi-based Python bindings over the same API shape.</p>
+    </div>
+  </div>
+
+  <div class="prose">
+    {{ .Content }}
+  </div>
+
+</div>
+{{ end }}

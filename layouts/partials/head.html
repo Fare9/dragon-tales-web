@@ -1,0 +1,20 @@
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ if .IsHome }}{{ .Site.Title }} — {{ .Site.Params.tagline }}{{ else }}{{ .Title }} · {{ .Site.Title }}{{ end }}</title>
+  <meta name="description" content="{{ if .Description }}{{ .Description }}{{ else }}{{ .Site.Params.tagline }}{{ end }}">
+  <link rel="icon" type="image/png" href="{{ "img/favicon-32.png" | relURL }}">
+  <link rel="apple-touch-icon" href="{{ "img/favicon-180.png" | relURL }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@1,500;1,600&display=swap" rel="stylesheet">
+  {{ $chroma := resources.Get "css/chroma.css" }}
+  {{ $main := resources.Get "css/main.css" }}
+  {{ $css := slice $chroma $main | resources.Concat "css/site.css" }}
+  {{ if hugo.IsProduction }}
+    {{ $css = $css | minify | fingerprint }}
+    <link rel="stylesheet" href="{{ $css.RelPermalink }}" integrity="{{ $css.Data.Integrity }}">
+  {{ else }}
+    <link rel="stylesheet" href="{{ $css.RelPermalink }}">
+  {{ end }}
+</head>
