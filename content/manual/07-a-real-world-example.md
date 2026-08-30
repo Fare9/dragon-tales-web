@@ -336,10 +336,11 @@ difference between it and this one is exactly that hand-written prologue.
 
 ## Where to go from here
 
-This is the end of the guided walkthrough, but not the end of what
-dragon-tales can do — see [IDEAS.md](https://github.com/Fare9/dragon-tales/blob/main/docs/manual/IDEAS.md)
-for topics this manual doesn't cover yet (RISC-V once it has lifter
-support, symbolic execution with Z3, writing a custom analysis pass). If
+That is the pipeline end to end. Chapter 8 goes a step further and asks the
+code questions reading it can't answer — what input satisfies this check,
+which branches are real, where a computed jump goes. For topics beyond that,
+see [IDEAS.md](https://github.com/Fare9/dragon-tales/blob/main/docs/manual/IDEAS.md)
+(RISC-V once it has lifter support, writing a custom analysis pass). If
 you run into a gap like the two in this chapter on your own code, that's
 not a dead end: both are scope limitations of the current lifter/analysis,
 not fundamental — the IGNIL opcode set and the `Graph`/`BasicBlock`/`Function`

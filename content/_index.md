@@ -35,10 +35,18 @@ further analysis or transformation. A **backward slicer** walks IGNIL CFGs to
 answer questions like "where did this flag actually come from?" without
 crossing block joins.
 
+Where reading the code stops being enough, a **symbolic executor** runs IGNIL
+over Z3 bitvectors: seed registers and memory concretely or symbolically, run
+a block, then ask the solver for an input that makes a check pass, a proof
+that some obfuscated arithmetic is really just `a + b`, or the concrete set of
+addresses a computed jump can reach.
+
 ## Where to go next
 
 The [manual](manual/) walks through the whole pipeline hands-on, one running
-example (a small ARM64/x86-64 function) all the way from raw bytes to LLVM IR.
+example (a small ARM64/x86-64 function) all the way from raw bytes to LLVM IR,
+and ends by [asking the solver questions](manual/08-symbolic-execution/) the
+code alone doesn't answer.
 For reference material organized by class and function instead, see
 [`docs/cpp_api.md`](https://github.com/Fare9/dragon-tales/blob/main/docs/cpp_api.md),
 [`docs/c_api.md`](https://github.com/Fare9/dragon-tales/blob/main/docs/c_api.md), and
