@@ -665,3 +665,260 @@ img-comparison-slider.code-slider {
   font-size: 0.88rem;
   margin-top: 0.25rem;
 }
+
+/* ---------- Posts ---------- */
+
+.page--narrow {
+  max-width: 840px;
+}
+
+.post-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.2rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.post-list li a {
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  background: var(--bg-panel);
+  color: var(--text-bright);
+}
+
+.post-list li a:hover {
+  border-color: var(--blue);
+  text-decoration: none;
+  background: rgba(42, 150, 226, 0.06);
+}
+
+.post-list__date {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--cyan);
+  margin-right: 0.7rem;
+}
+
+.post-list__title {
+  font-weight: 600;
+}
+
+.post-list .desc {
+  display: block;
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  margin-top: 0.25rem;
+}
+
+.post-list__empty {
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 0.9rem;
+}
+
+.post-meta {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  margin: 0 0 0.4rem;
+}
+
+.post-meta__sep {
+  color: var(--border);
+  margin: 0 0.5rem;
+}
+
+/* ---------- FuzzSociety ---------- */
+
+/* the wordmark ships as near-black on transparent — invert it for the dark theme */
+.fs-logo {
+  height: 15px;
+  width: auto;
+  vertical-align: -2px;
+  filter: invert(1);
+  opacity: 0.85;
+  transition: opacity 0.15s ease;
+}
+
+a:hover .fs-logo { opacity: 1; }
+
+.hero__org {
+  margin: 1.6rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.hero__org a { border-bottom: none; }
+
+.site-footer__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem 2rem;
+  margin-top: 0.9rem;
+}
+
+.site-footer__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0.85;
+}
+
+.site-footer__fs-logo {
+  height: 14px;
+  width: auto;
+  filter: invert(1);
+}
+
+/* ---------- Training cards ---------- */
+
+.trainings {
+  margin-top: 3.5rem;
+}
+
+.trainings__intro {
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  max-width: 70ch;
+  margin: 0 auto 1.8rem;
+  text-align: center;
+}
+
+.trainings__intro a { border-bottom: none; }
+
+.training-cards {
+  display: grid;
+  /* min() keeps all three side by side inside the narrower post column,
+     and collapses to one per row on mobile */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 215px), 1fr));
+  gap: 1.2rem;
+}
+
+.training-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-panel);
+  overflow: hidden;
+  color: var(--text);
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.training-card:hover {
+  border-color: var(--blue);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+.training-card__img {
+  width: 100%;
+  aspect-ratio: 600 / 610;
+  object-fit: cover;
+  display: block;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+}
+
+.training-card__body {
+  padding: 1rem 1.1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.training-card__label {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--green);
+}
+
+.training-card__name {
+  margin: 0.4rem 0 0.5rem;
+  font-size: 1rem;
+  line-height: 1.35;
+  color: var(--text-bright);
+}
+
+.training-card__desc {
+  margin: 0 0 1rem;
+  font-size: 0.87rem;
+  color: var(--text-dim);
+  flex: 1;
+}
+
+.training-card__cta {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--cyan);
+}
+
+/* the section also renders inside .prose on post pages — don't inherit its
+   link underlines, image radius or heading spacing */
+.prose .trainings a { border-bottom: none; }
+.prose .trainings a:hover { border-bottom: none; }
+.prose .training-card { border: 1px solid var(--border); }
+.prose .training-card:hover { border-color: var(--blue); }
+.prose .training-card__img { border-radius: 0; }
+.prose .training-card__name { margin: 0.4rem 0 0.5rem; font-size: 1rem; }
+.prose .training-card__desc { margin: 0 0 1rem; }
+
+/* ---------- Post table of contents ---------- */
+
+.post-toc {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-panel);
+  padding: 0.8rem 1.1rem;
+  margin: 1.8rem 0 2.5rem;
+}
+
+.post-toc > summary {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.post-toc ul {
+  margin: 0.6rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.9rem;
+}
+
+.post-toc > nav > ul { padding-left: 0; list-style: none; }
+.post-toc > nav > ul > li { margin: 0.3rem 0; }
+.post-toc a { border-bottom: none; color: var(--text); }
+.post-toc a:hover { color: var(--cyan); }
+
+/* ---------- Collapsible blocks inside prose ---------- */
+
+.prose details:not(.post-toc) {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-panel);
+  padding: 0.7rem 1rem;
+  margin: 1.2rem 0;
+}
+
+.prose details:not(.post-toc) > summary {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--blue-light);
+  cursor: pointer;
+}
+
+.prose details:not(.post-toc) > summary:hover { color: var(--cyan); }
+.prose details[open]:not(.post-toc) > summary { margin-bottom: 0.6rem; }

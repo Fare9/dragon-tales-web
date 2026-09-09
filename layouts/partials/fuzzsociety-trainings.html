@@ -1,0 +1,28 @@
+{{ $fs := .Site.Params.fuzzsociety }}
+<section class="trainings">
+  <p class="section-title">the theory behind dragon-tales</p>
+  <p class="trainings__intro">
+    dragon-tales is a project of
+    <a class="fs-link" href="{{ $fs }}">
+      <img class="fs-logo" src="{{ "img/fuzzsociety-logo.svg" | relURL }}" alt="FuzzSociety">
+    </a>.
+    The theory this library is built on — disassembly, function and CFG
+    recovery, semantic ILs, lowering to LLVM IR, emulation and symbolic
+    execution — is taught end to end in the following trainings, all with
+    in-browser labs and no local setup:
+  </p>
+
+  <div class="training-cards">
+    {{ range .Site.Params.trainings }}
+      <a class="training-card" href="{{ .url }}">
+        <img class="training-card__img" src="{{ .img | relURL }}" alt="" loading="lazy">
+        <div class="training-card__body">
+          <span class="training-card__label">{{ .label }}</span>
+          <h4 class="training-card__name">{{ .name }}</h4>
+          <p class="training-card__desc">{{ .desc | markdownify }}</p>
+          <span class="training-card__cta">fuzzsociety.org →</span>
+        </div>
+      </a>
+    {{ end }}
+  </div>
+</section>

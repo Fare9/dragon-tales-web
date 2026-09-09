@@ -1,0 +1,38 @@
+{{ define "main" }}
+<div class="page page--narrow">
+  <article class="prose">
+    <p class="post-meta">
+      <a href="{{ "posts/" | relURL }}">← all posts</a>
+      <span class="post-meta__sep">/</span>
+      <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "January 2, 2006" }}</time>
+      <span class="post-meta__sep">/</span>
+      <span>{{ .ReadingTime }} min read</span>
+    </p>
+    <h1>{{ .Title }}</h1>
+
+    {{ if .Params.toc }}
+      <details class="post-toc" open>
+        <summary>Contents</summary>
+        {{ .TableOfContents }}
+      </details>
+    {{ end }}
+
+    {{ .Content }}
+
+    {{ partial "fuzzsociety-trainings.html" . }}
+
+    <nav class="chapter-pager">
+      {{ with .PrevInSection }}
+        <a class="prev" href="{{ .RelPermalink }}">
+          <span class="dir">← older</span>{{ .LinkTitle }}
+        </a>
+      {{ end }}
+      {{ with .NextInSection }}
+        <a class="next" href="{{ .RelPermalink }}">
+          <span class="dir">newer →</span>{{ .LinkTitle }}
+        </a>
+      {{ end }}
+    </nav>
+  </article>
+</div>
+{{ end }}

@@ -10,6 +10,39 @@ disableKinds = ["taxonomy", "term"]
 [params]
   tagline = "a binary analysis library, cross-architecture, built on LLVM"
   github = "https://github.com/Fare9/dragon-tales"
+  fuzzsociety = "https://fuzzsociety.org/"
+
+# The trainings that cover the theory dragon-tales is built on.
+[[params.trainings]]
+  label = "Basic Training"
+  name = "Wyvern — Building an ARM Disassembler & IL From Scratch"
+  url = "https://fuzzsociety.org/product/irbasic/"
+  img = "img/training-basic.jpg"
+  desc = """Assemble and decode AArch64 through LLVM's MC layer, recover \
+functions and basic blocks from a flat instruction stream, build the \
+control-flow graph, then design WVIL — a semantic IL — and lift instructions \
+into it. The same ground dragon-tales covers from raw bytes to an \
+architecture-independent IL."""
+
+[[params.trainings]]
+  label = "Advanced Training"
+  name = "Wyvern Advanced — From AArch64 Machine Code to LLVM IR & Program Analysis"
+  url = "https://fuzzsociety.org/product/advanced-program-analysis/"
+  img = "img/training-advanced.jpg"
+  desc = """The full pipeline: disassembly, function discovery, basic-block \
+recovery, CFG construction, the WVIL semantic IL, then lowering to LLVM IR, \
+optimizing it and analysing the result — backward slicing, jump-table \
+recovery, a C API and Python bindings over cffi, closing on ARM32/Thumb."""
+
+[[params.trainings]]
+  label = "Binary Analysis bundle"
+  name = "Program Analysis Bundle — Wyvern Advanced + Emulation & Symbolic Execution"
+  url = "https://fuzzsociety.org/product/program-analysis-bundle/"
+  img = "img/training-bundle.jpg"
+  desc = """Wyvern Advanced together with *Emulators & Symbolic Execution \
+Engines*: the three ways of reading a binary — static lifting to an IR, \
+concrete execution under emulation, and symbolic reasoning over constraints — \
+which is exactly the combination the VMProtect write-up leans on."""
 
 [markup]
   [markup.goldmark]
@@ -33,9 +66,13 @@ disableKinds = ["taxonomy", "term"]
     url = "/manual/"
     weight = 20
   [[menu.main]]
+    name = "Posts"
+    url = "/posts/"
+    weight = 30
+  [[menu.main]]
     name = "GitHub"
     url = "https://github.com/Fare9/dragon-tales"
-    weight = 30
+    weight = 40
 
 [outputs]
   home = ["HTML", "RSS"]

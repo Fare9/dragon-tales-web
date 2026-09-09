@@ -19,6 +19,12 @@
       <a class="btn btn--primary" href="{{ "manual/" | relURL }}">Read the manual →</a>
       <a class="btn btn--ghost" href="{{ .Site.Params.github }}">View on GitHub</a>
     </div>
+    <p class="hero__org">
+      a project of
+      <a href="{{ .Site.Params.fuzzsociety }}">
+        <img class="fs-logo" src="{{ "img/fuzzsociety-logo.svg" | relURL }}" alt="FuzzSociety">
+      </a>
+    </p>
   </section>
 
   <section class="prologue">
@@ -67,6 +73,8 @@
   <div class="prose">
     {{ .Content }}
   </div>
+
+  {{ partial "fuzzsociety-trainings.html" . }}
 
 </div>
 {{ end }}
