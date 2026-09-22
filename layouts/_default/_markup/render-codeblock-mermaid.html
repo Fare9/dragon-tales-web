@@ -1,0 +1,5 @@
+{{- /* ```mermaid fences render as a diagram; the loader is added once per page by posts/single.html */ -}}
+<pre class="mermaid">
+{{- .Inner | safeHTML }}
+</pre>
+{{- .Page.Store.Set "hasMermaid" true -}}

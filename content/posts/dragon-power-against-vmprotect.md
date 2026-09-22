@@ -1,8 +1,9 @@
 ---
 title: "Dragon Power Against VMProtect"
 date: 2026-09-09
-description: "Reverse-engineering, naming and devirtualizing a VMProtect x64 virtual machine with dragon-tales: all 256 handlers in four views, down to a recompiled LLVM IR function."
-summary: "Reverse-engineering, naming and devirtualizing a VMProtect x64 virtual machine with dragon-tales: all 256 handlers in four views, down to a recompiled LLVM IR function."
+lastmod: 2026-09-22
+description: "Reverse-engineering, naming and devirtualizing a VMProtect x64 virtual machine with dragon-tales: all 256 handlers in four views, the virtual CFG recovered from the file alone with no trace, the last MBA cleaned, and the function recompiled to an executable indistinguishable from the original."
+summary: "Reverse-engineering, naming and devirtualizing a VMProtect x64 virtual machine with dragon-tales: all 256 handlers in four views, the virtual CFG recovered from the file alone with no trace, the last MBA cleaned, and the function recompiled to an executable indistinguishable from the original."
 toc: true
 ---
 
@@ -21,8 +22,11 @@ But for now, let's jump to the post that it is what everyone is waiting for!
 
 This is the full story of taking one VMProtect-virtualized function apart: from
 the VM entry stub, through the dispatcher and all 256 handlers, to a clean LLVM-IR
-recompilation of the original function — and an honest account of the one wall
-that VMProtect still puts in the way. Everything here is generated from the binary
+recompilation of the original function, and finally to a native executable that
+behaves exactly like the one VMProtect was given. It is told in the order it
+happened, including the wall the first attempt ran into (Part 8) and what that
+wall turned out to be once the bytecode was explored without a trace (Parts
+9–13, added on September 22). Everything here is generated from the binary
 by the scripts listed at the end; the complete per-handler catalogue (all 256
 handlers, four views each) is in the companion appendix **[`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Dragon%20power%20against%20VMProtect%20-%20Handlers.md)**.
 
@@ -246,6 +250,25 @@ Every class exists in several polymorphic copies (different registers, different
 junk, different tail); the copies never differ in effect. There are no dedicated
 AND/OR/XOR/NEG handlers: like every VMProtect build, this one synthesizes them in
 bytecode from NOR/NAND and ADD.
+
+Three things in this table were only settled later, by executing the bytecode
+(Part 9), and are worth correcting here:
+
+- **`VM_EXIT` is seven handlers, but one of them is not an exit.** Six of the
+  seven really restore the native context and `ret` (their effect reads
+  `VM_SP = q[VM_SP+0x70]`, `VIP = q[VM_SP+0x0]`, `HTABLE = q[VM_SP+0x58]`, all
+  fifteen registers popped). The one at `0x1400e6a80` (slot `0x57`) does only
+  `VM_SP += 8; VIP = q[VM_SP+0x0]` and falls straight into the dispatcher: it
+  is the VM's **jump**, `VM_JUMP`, and the tail `ret` the catalogue saw is the
+  dispatcher's own `push rcx; ret`. Part 7's stream ends every block with it
+  (`VM_EXIT operand=0x57`), and Part 9.3 shows how it is handled.
+- **There is no conditional-jump handler at all.** A branch is `VM_JUMP` on a
+  target the bytecode computed arithmetically from a saved RFLAGS word, with
+  `NOR` / `NAND` / `ADD` and shifts. The condition is data, not an opcode.
+- **One `LOAD64` copy is segment-relative.** `0x1400e5755` (slot `0x11`) is
+  `mov rdi, gs:[r10]`, not `mov rdi, [r10]`: it is how the prologue reads the
+  TEB (`gs:[0x60]` = PEB, Part 10.1). Same effect on the VM stack, different
+  address space.
 
 The first-pass catalog, built from LLVM IR shape alone,
 had 40 handlers in an "ARITH_FLAGS?" bucket, 23 unknown and 16 unrecoverable. The
@@ -1342,7 +1365,7 @@ from the lifted IR alone? Yes, in four concrete ways:
    like the VM's own semantics rather than like x86.
 4. **Honest gaps.** Anything the lifter could not model stays visible as `undef@ADDR`
    (or as an input register that should have been overwritten). Grepping those
-   found the instruction classes the lifter lacked (Part 9). It also shows the
+   found the instruction classes the lifter lacked (Part 14). It also shows the
    remaining one: every RFLAGS word carries an `undef` in bit 10 because
    dragon-tales marks DF undefined after arithmetic (17 existing tests encode that
    behavior, so it was left alone and documented instead), plus undefined PF/AF.
@@ -1432,6 +1455,11 @@ sequences are the synthesized AND/OR. The full linear decode is at the top of
 ## Part 7 — Devirtualization: the running program
 
 Recovered by [`scripts/dt_vm_trace.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/dt_vm_trace.py) running the real VMProtect VM on serial `AB` (733 VM instructions). See Part 3 for the ISA and Part 8 for the LLVM recompilation that turns this stream into clean IR.
+
+*Read with Part 10 in hand:* the `VM_EXIT operand=0x57` that ends each block
+below is the VM's jump, not an exit (Part 3), and the "loop body" is
+VMProtect's prologue loop — the table check of Part 10.1 — not the hash, which
+lives hundreds of kilobytes away at VIP `0x140149443`.
 
 ### Opcode histogram
 
@@ -1745,7 +1773,15 @@ Step 1 is where VMProtect fights back, and it is the crux of the whole exercise:
 - **dragon (symbolic, faithful):** steps the real VM and stays on the correct path, but its executor is O(n^2) in accumulated state; the protected `check_serial` is tens of thousands of VM instructions even for one character, and a run never finished in practice.
 - **Unicorn (concrete, fast, ~57M instr/s):** runs, but the emulated function does **not terminate** within 400M instructions and its result is independent of the input, while the real [`serial_check.vmp.exe`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/serial_check.vmp.exe) returns instantly. So the emulated environment is missing a check and the VM loops. Hooking `cpuid` and advancing `rdtsc` was not enough; a faithful PEB/TEB, KUSER clock, and integrity-checksum-friendly memory image are needed. This is the well-known VMProtect anti-emulation wall.
 
-So the honest status is: **the recompiler is finished; the automatic trace is not.** The two clean ways to feed it a real trace are (a) a faithful VMProtect environment (engineering, not research), or (b) a hardware/DBI trace of the *real* process — Intel PT, Time-Travel Debugging, or a debugger single-stepping [`serial_check.vmp.exe`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/serial_check.vmp.exe) — which runs in the real OS and sidesteps environment fidelity entirely. [`dt_recompile.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/dt_recompile.py) consumes either unchanged.
+**What this diagnosis got wrong** (added September 22): both bullets above were
+right about the symptom and wrong about the cause. The executor was not O(n²)
+by nature — it was folding nothing on literals, which Part 14 fixed — and the
+emulated function did terminate, only after 1.9 billion iterations of a loop
+over a table VMProtect's startup code never got to fill. Part 10.1 reads that
+loop off the recovered CFG. Nothing in it is anti-emulation of `check_serial`,
+and no trace was ever needed: Part 9.
+
+So the honest status *was*: **the recompiler is finished; the automatic trace is not.** The two clean ways to feed it a real trace are (a) a faithful VMProtect environment (engineering, not research), or (b) a hardware/DBI trace of the *real* process — Intel PT, Time-Travel Debugging, or a debugger single-stepping [`serial_check.vmp.exe`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/serial_check.vmp.exe) — which runs in the real OS and sidesteps environment fidelity entirely. [`dt_recompile.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/dt_recompile.py) consumes either unchanged.
 
 ### The recompiler back-end, demonstrated on the recovered logic
 
@@ -1917,16 +1953,761 @@ entry:
 attributes #0 = { mustprogress nofree norecurse nosync nounwind willreturn memory(argmem: read) }
 ```
 
-### Where this leaves the analysis
+### Where this left the analysis, on September 9
 
 - **Done:** VM structure and ISA (Parts 1-3), all 256 handlers' semantics (Part 4 + [`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Dragon%20power%20against%20VMProtect%20-%20Handlers.md)), the running program's opcode stream (Part 7), and the recompiler that turns a stream into verified LLVM IR (Part 8).
-- **Blocked only on trace acquisition:** a full push-button devirtualization of the protected binary needs a complete VM trace, which VMProtect's anti-emulation withholds from a synthetic environment. A real-process trace (option b above) removes the block with no change to the recompiler.
+- **Blocked only on trace acquisition** — or so it seemed: a full push-button devirtualization of the protected binary needs a complete VM trace, which VMProtect's anti-emulation withholds from a synthetic environment. A real-process trace (option b above) removes the block with no change to the recompiler. *(Superseded: Part 9 devirtualizes the binary from the file alone.)*
 - **Correction to Part 7:** the 220-instruction repeat reported there is an early VM loop in VMProtect's preamble, not the hash body; the hash loop sits after a long integrity section, which is also why the trace is so large.
 
-That is the honest finish line: the virtual machine is fully understood and every handler is recompilable, and the last mile is the classic VMProtect problem of faithfully running the protected code to capture its trace.
+That was the finish line of the first version of this post: the virtual machine fully understood, every handler recompilable, and the last mile apparently the classic VMProtect problem of faithfully running the protected code to capture its trace. It did not hold. The rest of the post is the second version.
 
 
-## Part 9 — dragon-tales lifter work done for this
+## Part 9 — Devirtualizing without a trace
+
+Part 8 ended on a wall: the recompiler was done, but it needed a trace of the
+real VM, and neither dragon-tales' stepper nor Unicorn could produce one. The
+rest of this post is what happened when the problem was turned around. **No
+trace is needed.** The protected code can be executed symbolically *exactly as
+it sits in the binary* — the real `VM_ENTRY`, the real dispatcher, the real
+handlers, no VM emulator written — as long as it is never followed along a
+path. The tool is
+[`scripts/vmprotect_full_analysis.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/vmprotect_full_analysis.py),
+about 1900 lines, and the long-form write-up with every number is
+[`FINAL_ANALYSIS.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/FINAL_ANALYSIS.md)
+in the companion repo. This part is the method; Parts 10–13 are what it found.
+
+The idea in one paragraph: identify every program point by the pair **(native
+address of the handler, VIP)** and visit each one *once*. When a second path
+arrives at a point already seen, **merge** the two machine states — whatever
+they disagree on becomes a fresh variable — and revisit the point only if the
+merge changed something. Keep **no path constraints**; use the solver only to
+enumerate the values a jump target can take. Give the native stack pointer a
+**constant** value, so that the VM's own state (VM stack, register file, VIP,
+handler table) is made of constants and every access to it has a constant
+address. That is the combination of Pushan's VPC-sensitive, constraint-free
+symbolic emulation ([arXiv 2603.18355](https://arxiv.org/abs/2603.18355)), the
+old "concretize RSP" advice, and the virtual-jump handling in the
+[Aftermath Labs Tencent VM post](https://aftermathlabs.net/blog/31/07/2026/).
+
+### 9.1 The machine model
+
+Set up once, before the first instruction:
+
+| what | value | why |
+|---|---|---|
+| PE sections + headers | mapped **concrete**, as shared read-only images | bytecode, handler table and handlers are all constants |
+| `RSP` | the constant `0x7fe000`, inside a stack window `[0x7e0000, 0x800000)` | everything the VM derives from it becomes constant |
+| `[RSP]` | a sentinel return address `0xdead0000` | reaching it = the function returned |
+| the other 15 GPRs | **symbolic**: `in_RAX`, `in_RCX`, ... | `RCX` is the argument; nothing is assumed about it, not even that it points somewhere |
+| flags | concrete 0 | `DF=0` matters for `rep movsb` in the VM's stack guard |
+| environment page `[0, 0x1000)` | **symbolic** bytes `env[i]`, except `TEB.PEB` and `PEB.ImageBaseAddress` | dragon flattens `gs:[x]` to the absolute address `x`, so the TEB sits at 0 |
+
+`VM_ENTRY` computes `VM_SP = RSP - 0x78`, `VM_REGS = (RSP - 0x278) & ~0xf`,
+`VIP = 0x100000000 | bswap32(~(1 - key))` (Part 1.2), and loads the handler
+table address. With a constant `RSP` and the constant key pushed by the stub,
+**all four are constants** from the first handler on: `VM_SP = 0x7fdf78`,
+`VM_REGS = 0x7fdd70`, `VIP = 0x14018f959`, `HTABLE = 0x1400e93f0`. The value
+of `RSP` is arbitrary, it costs nothing in generality, and it is undone at the
+end (Part 11).
+
+### 9.2 Executing a handler — and why the next one is never "solved for"
+
+Handlers are not run in isolation with fresh symbols, as Part 4 did to *name*
+them. One machine state is carried from handler to handler, and a handler is
+simply the next native code to run. Native code is executed a **basic block at
+a time**: capstone decodes forward from `pc`, following direct `jmp`s (handlers
+are chopped up with them), until a `call`, `ret`, `jcc`, indirect `jmp`, or an
+instruction that loads the VIP register; dragon lifts that run as one IGNIL
+trace with `lift_trace`, simplifies it and removes block-local dead stores; the
+symbolic executor runs it. Lifted blocks are cached by address: the whole
+exploration lifts **112** distinct native blocks and runs them 6773 times.
+
+Take the second instruction of the bytecode, `POP_VR64 a0` at VIP
+`0x14018f95b`, executed by the handler copy at `0x1400e5427` (the one shown in
+Part 4), and the dispatcher it falls into:
+
+```asm
+0x1400e5427: mov  r9, [rbp]          ; RBP = VM_SP = 0x7fdf80  -> a concrete address
+0x1400e542f: add  rbp, 8             ; VM_SP = 0x7fdf88, by constant folding
+0x1400e5440: movzx ebx, byte [rsi]   ; RSI = VIP -> reads a byte of the mapped image: 0xa0
+0x1400e5443: add  rsi, 1
+0x1400e544f: mov  [rsp + rbx], r9    ; RSP = VM_REGS -> store at the constant 0x7fdd70 + 0xa0
+      jmp 0x1400e5103                ; followed, not lifted
+0x1400e5103: movzx r8d, byte [rsi]   ; next opcode byte, from the image: a constant
+0x1400e5107: add  rsi, 1
+0x1400e5113: movsxd rcx, [r11 + r8*4]; handler table entry, from the image: a constant
+0x1400e5117: add  rcx, r11
+0x1400e511a: push rcx
+0x1400e511b: ret                     ; pops a constant
+```
+
+Every address in it is a literal, so every load and store resolves without the
+solver. The value moved (`r9`) may well be symbolic — one instruction earlier
+it was `in_RSI`, the first saved register of the context — but *where* it is
+moved from and to is not. And the `ret` pops a literal: **the next handler is
+not computed by a solver query, it falls out of constant folding.** Of the 6773
+native blocks executed, the solver was needed for the successor of 20.
+
+What makes a value symbolic, then? Only four things: the function's arguments,
+memory read *through* them (`*p`, a load whose address is `in_RCX`, recorded as
+an unresolved access with its address expression), the environment page, and
+the results of instructions dragon keeps opaque (`cpuid`). Everything the VM
+does to itself stays concrete.
+
+### 9.3 Virtual jumps
+
+The handler at `0x1400e6a80` is the VM's jump. Part 4's catalogue named it
+`VM_EXIT` (slot `0x57`); it is not one — it re-enters the dispatcher:
+
+```asm
+0x1400e6a80: mov rsi, [rbp]     ; VIP = the value on top of the VM stack
+0x1400e6a85: add rbp, 8
+0x1400e6a8c: jmp 0x1400e50fc    ; -> lea r11, [rip+...] ; dispatcher
+```
+
+An unconditional virtual jump pops a literal and nothing special happens. A
+**conditional** one pops an expression: upstream, the bytecode turned a saved
+RFLAGS word into "target A or target B" with `NOR` / `NAND` / `ADD` / shifts —
+VMProtect has no `jcc` handler; the condition is arithmetic. After this handler
+`RSI` holds a term of 35 to 70 DAG nodes of extracts, concats and `ite`s over
+the flag bits, whose only possible values are two addresses. Three things have
+to happen, in this order:
+
+1. **Stop before the fetch.** The block builder ends a block right after any
+   instruction that *loads* the VIP register (`mov rsi, ...`; stepping it with
+   `add rsi, 4` does not count). Without that, the load and the dispatcher's
+   `movzx r8d, [rsi]` are one block and the opcode is fetched through a
+   symbolic pointer.
+2. **Enumerate.** Ask the solver for the values of the `RSI` expression, with
+   no constraints asserted. The answer is complete and small — always exactly
+   two here, e.g. `{0x14011fe45, 0x14011ff41}`.
+3. **Fork, and hand each side its constant.** For each value `v` the state is
+   copied, `RSI` is overwritten with the literal `v`, and `RSI_expr == v` is
+   recorded as the condition of that edge. Both copies continue concretely.
+
+Forking *after* the fetch, at the next handler's entry, is wrong in an
+instructive way: the dispatcher's `ret` then has several targets too, and with
+no path constraints to tie "which handler" to "which VIP", the explorer pairs
+every handler with every VIP. The first version of the script did that and
+produced nodes such as "`POP_VR64` copy A at the VIP that belongs to copy B".
+
+The recorded condition, `VIP expression == target`, is unreadable, but the
+comparison the programmer wrote is still inside it. The script collects the
+comparison atoms of the term and asks the solver which atom — or which pair,
+for signed compares built from `SF != OF` — the whole thing is equivalent to.
+All 12 conditions reduce to one atom:
+
+| edge | recorded as | reduced to |
+|---|---|---|
+| B7 -> B4 | 40-node term `== 0x1400be130` | `mem8[arg0] == 0` |
+| B3 -> B5 | ... `== 0x14011ff41` | `Extract(7, 0, v_7fdfc8) == 45` |
+| B5 -> B4 | ... `== 0x1400be130` | `mem8[1 + v_7fdf90] == 0` |
+
+(`v_<addr>` is a VM stack slot whose value varies; `mem8[...]` is a byte read
+through a run-time pointer.)
+
+### 9.4 Loops: visit once, merge, revisit only if something changed
+
+A node is `(native pc of the handler, VIP on entry)`; at `VM_ENTRY` the
+discriminator is the entry key instead. The first time a node is reached, the
+current state is stored as its **entry state** and the node is queued. The
+worklist pops a node, restores its entry state, runs native blocks until the
+next node point(s), and delivers the resulting state(s) to the successor(s).
+Arriving at a node that already exists:
+
+- **One predecessor so far** — the node *takes* the new state (if it differs
+  from the stored one) and is re-queued. Nothing is merged.
+- **Two or more predecessors** — the new state is **merged** into the stored
+  one: every register or memory location the two disagree on is replaced by a
+  fresh variable named after the node and the location
+  (`top@n1034!m0x7fdf90:64`). Whole written values are widened, not single
+  bytes. The node is re-queued only if the merge changed something; a location
+  that is already such a variable is left alone, which is what makes this
+  converge.
+
+The whole exploration is this loop:
+
+```python
+def explore(self):
+    self.fresh_machine()                       # 9.1
+    root = Node((func, None)); root.entry = ex.snapshot()
+    worklist = deque([root])
+    while worklist:
+        self.run_node(worklist.popleft(), worklist)
+
+def run_node(self, node, worklist):
+    pending = [(node.pc, node.entry, Exit())]  # forks inside the node land here
+    while pending:
+        pc, state, out = pending.pop(); ex.restore(state)
+        while True:
+            if pc == SENTINEL:          out.target = "ret"; break
+            if self.is_node_point(pc):  out.target = self.node_key(pc); break   # next handler
+            if self.fork_vip():         ...push one state per VIP value...; break # 9.3
+            block = self.lifter.block(pc)
+            result = ex.run(block.ignil); out.accesses += result.unresolved
+            pc = ...  # goto / the executor's successor(s) / do_call / do_ret / do_rep
+        out.deltas = ex.diff(node.entry)       # what this node did
+        node.exits.append(out)
+        self.arrive(out.target, edge, worklist)  # take or merge
+```
+
+Merging only at joins matters more than it looks. The first version merged at
+every node. The second walk of a straight-line block then compares, at each VM
+instruction, the expression built from the loop's *variables* with the one the
+first walk built from its *constants*; they differ, so every intermediate value
+is widened on the spot, and by the time the `VM_JUMP` at the bottom of the
+block is reached, the jump target computed at the top is "any value" and cannot
+be enumerated.
+
+| | merge everywhere | merge at joins |
+|---|---:|---:|
+| variables created | 11,982 | 191 |
+| merges that widened | 950 | 11 |
+| join points | every node | **5 of 1558** |
+| virtual basic blocks | 17 (with impossible handler/VIP pairs) | 11 |
+
+The five join points are exactly the heads of the virtual blocks with two ways
+in — the two sides of the CPUID test, the prologue loop, the hash loop, the
+join after the dash test, and the two ways out. Here is the hash loop, step by
+step:
+
+1. B7 tests `*p == 0` and jumps to B3 with `p = in_RCX`, `c = mem8[in_RCX]`,
+   `acc = 0xC0FFEE11` — a literal.
+2. B3 (`c == '-'`?) forks to B5 and B10; B10 computes the new `acc`; B5
+   advances `p`, reads the next byte, and jumps **back to B3**.
+3. That arrival is B3's second predecessor. Merge: `p` is `in_RCX` on one side
+   and `in_RCX + 1` on the other; `acc` is a literal on one side and an
+   expression on the other; `c` differs. All three become variables of
+   `n1034`. Re-queue B3.
+4. The loop body is walked again, now over variables. At the back edge the
+   incoming `p` is `top@n1034!... + 1`, which differs from the stored
+   `top@n1034!...` — but that location already *is* a variable of this node,
+   so the merge changes nothing and the loop is done.
+
+That is the whole cost of a loop: the body is walked a small, fixed number of
+times, independent of how many iterations a real run performs. In numbers:
+1558 nodes, 4587 visits, 6773 native blocks executed, 10–17 seconds. 433 nodes
+were visited once (straight-line code before any join); the 458 of the hash
+loop and the exit, five times.
+
+
+## Part 10 — The recovered virtual CFG, and what the wall really was
+
+```mermaid
+flowchart TD
+  B0["<b>B0</b>  378 VM instr.<br/>entry, VM_ENTRY, context -> vregs,<br/>VM_EXIT / native pushfq / VM_ENTRY, CPUID"]
+  B6["<b>B6</b>  55"]
+  B1["<b>B1</b>  137<br/>PEB.OSBuildNumber, table setup"]
+  B2["<b>B2</b>  110<br/>table entry == CPUID key ?"]
+  B8["<b>B8</b>  110<br/>entries left == 1 ?"]
+  B9(["<b>B9</b>  133 - VM_EXIT to a non-address<br/>abandoned"])
+  B7["<b>B7</b>  177<br/>*p == 0 ?"]
+  B3["<b>B3</b>  89<br/>c == '-' ?"]
+  B10["<b>B10</b>  112<br/>acc = ((acc&lt;&lt;4 ^ acc&gt;&gt;3) + c) ^ 0xDEADBEEF"]
+  B5["<b>B5</b>  103<br/>c = *++p;  c == 0 ?"]
+  B4["<b>B4</b>  154<br/>acc == 0xEFD327AD, VM_EXIT"]
+  R(["return"])
+  B0 -->|"cpuid(1).eax[11:4] == 0xFE"| B6
+  B0 -->|else| B1
+  B6 --> B1
+  B1 --> B2
+  B2 -->|"match"| B7
+  B2 -->|else| B8
+  B8 -->|"== 1"| B9
+  B8 -->|else| B2
+  B7 -->|"mem8[arg0] == 0"| B4
+  B7 -->|else| B3
+  B3 -->|"c == 45"| B5
+  B3 -->|else| B10
+  B10 --> B5
+  B5 -->|"mem8[p+1] == 0"| B4
+  B5 -->|else| B3
+  B4 --> R
+```
+
+| block | VIP range | VM instr. | role |
+|---|---|---:|---|
+| B0 | `0x14018f959` .. `0x14017209d` | 378 | VMProtect prologue |
+| B6 | `0x1400c05d1` .. `0x1400c0648` | 55 | prologue (one side of the CPUID test) |
+| B1 | `0x1400c064a` .. `0x1400c078e` | 137 | prologue |
+| B2 | `0x1400c0790` .. `0x1400c0881` | 110 | prologue loop head |
+| B8 | `0x14018a8d3` .. `0x14018a9d3` | 110 | prologue loop latch |
+| B9 | `0x140132d97` .. `0x140132ec6` | 133 | prologue failure exit |
+| **B7** | `0x14010e805` .. `0x140122eb6` | 177 | **`check_serial`: `*p == 0`** |
+| **B3** | `0x140149443` .. `0x140149503` | 89 | **loop head: `c == '-'`** |
+| **B10** | `0x14011fe46` .. `0x14011ff40` | 112 | **hash update** |
+| **B5** | `0x14011ff42` .. `0x14012002d` | 103 | **advance, `c == 0`** |
+| **B4** | `0x1400be131` .. `0x1400be27d` | 154 | **final compare, `VM_EXIT`** |
+
+Six of the eleven blocks — 923 of 1558 virtual instructions — are VMProtect's,
+not the function's. The bytecode is not laid out contiguously: consecutive
+blocks live hundreds of kilobytes apart, which is why the static linear decode
+of Part 6 stops being trustworthy at the first virtual jump, and why the
+"loop body" reported in Part 7 (`0x1400c0790` .. `0x14018a9d3`) is B2 and B8,
+the prologue loop, not the hash. Opcode mix over all nodes: `POP_VR64` 541,
+`PUSH_VR64` 341, `PUSH_IMM64` 75, `POP_VR32` 68, `ADD64` 67, `PUSH_VSP64` 59,
+`NAND64` 49, `LOAD64` 44, `NOR64` 38 ... 8 `VM_JUMP`, 3 `VM_EXIT`, 2
+`VM_ENTRY`, 1 `CPUID`. Two thirds of a virtualized function is moving values
+between the VM stack and the register file.
+
+### 10.1 What VMProtect's prologue does
+
+Part 8 guessed at anti-emulation or an integrity pass over the image. With the
+CFG in hand it can be read off:
+
+1. **B0 leaves the VM to run one native instruction.** A `VM_EXIT` returns to
+   `0x1400c27c0`, which is `f3 f3 f3 f3 f3 9c = pushfq` (five redundant
+   prefixes as padding), followed by `push 0x5d3a1042 ; call VM_ENTRY` — a
+   second entry key, hence a second `VM_ENTRY` node. That address is the
+   constant Part 6 noticed being pushed at the top of the bytecode
+   (`PUSH_IMM64 c0270c4001000000`).
+2. **`CPUID`, leaf 1.** B0 branches on `cpuid(1).eax[11:4] == 0xFE` (B6 or
+   straight to B1).
+3. **The environment.** A gs-relative load — the handler at `0x1400e5755`,
+   one of the copies the catalogue names plain `LOAD64` — reads `gs:[0x60]`,
+   the PEB, and B1 reads `PEB + 0x120`: `OSBuildNumber`.
+4. **A run-time table.** B1 loads a pointer from the global `0x1400df900`,
+   which is zero in the file: VMProtect's startup code fills it in. `+0x168`
+   is a count, `+0x18` the first entry.
+5. **The loop (B2 <-> B8).** Each entry is a 32-bit word; B2 permutes and
+   partially inverts its bits and compares it with a key derived from the
+   CPUID result. A match goes on to the function (B7). No match: B8
+   decrements the count; when it reaches 1, B9 — a `VM_EXIT` whose return
+   address is built from flag bits and is not an address at all
+   (`0x152f9bb9...`, VIP = 0). That is a deliberate crash.
+
+So the wall was neither anti-emulation of `check_serial` nor an integrity
+check: it is an **environment check in the VM prologue over data that only
+exists after VMProtect's own startup has run**. Cold emulation sees an empty
+table; the count field then decodes to `1940493230`, and the loop runs 1.9
+billion iterations over memory that is not there. Any analysis that executes
+paths to completion pays for that — which is exactly what Part 8's 400 million
+Unicorn instructions were. One that visits each `(pc, VIP)` once walks the loop
+body three times and moves on: the wall is not climbed, it is simply not in the
+way.
+
+**Making the emitted code runnable.** The exploration keeps the environment
+page symbolic, so the conditions the prologue puts on it are on record. After
+the exploration, the script walks the shortest entry -> return path, takes
+every condition that talks only about `env[...]` (with opaque instruction
+results fixed at 0, which is what the `lli` stubs return), and asks Z3 for
+bytes: one condition, four bytes, `env[0x18..0x1b] = 0xdeabca21` — a table
+whose first entry matches. Those bytes go into the `@env` constant of the
+emitted module. They are *an* environment VMProtect accepts, not the one a
+real process would have.
+
+
+## Part 11 — From the CFG to LLVM IR
+
+For each node the script has: the variables merged at its entry, the loads it
+performed through run-time pointers, and for each exit the **state delta** —
+one `diff()` of the executor state against the node's entry state, giving every
+register and memory location that changed as a Z3 term over the entry state.
+That maps directly onto LLVM, one basic block per node:
+
+```llvm
+nK:                                       ; (handler, VIP)
+  %top = load iW, <location>              ; each variable merged here: "whatever is there now"
+  store %top, %slot_top
+  %ld  = load i8, inttoptr(<address>)     ; each load through a run-time pointer
+  br i1 <exit condition>, %nK.x0, %nK.t1
+nK.x0:
+  store <delta value>, <location>         ; every changed register / memory location
+  br label %n<successor>
+```
+
+Everything that crosses a node boundary goes through memory — the register
+file, the stack window, and one slot per merge or load variable — so no SSA
+value is used outside the block that computed it and dominance holds by
+construction. `mem2reg` undoes all of it. Here is a real one, the `VM_JUMP`
+that ends B7 (`*p == 0`?), as emitted:
+
+```llvm
+n1032:                                          ; VM_JUMP @ 0x1400e6a80 VIP=0x140122eb6, visited x3
+  %v27745 = load i8, ptr %s65                   ; mem8[arg0], loaded at the top of B7
+  %v27744 = icmp eq i8 %v27745, 0
+  %v27743 = xor i1 %v27744, -1
+  br i1 %v27743, label %n1032.x0, label %n1032.t1
+n1032.x0:                                       ; not the end of the string: into the loop
+  %v27746 = getelementptr i8, ptr %regs, i64 8
+  store i64 5369648167, ptr %v27746             ; RCX = the next handler, a literal
+  ...
+```
+
+**Undoing the constant RSP.** The window `[0x7e0000, 0x800000)` becomes
+`%stack = alloca [131072 x i8]`, and the constant address `a` becomes
+`getelementptr %stack, a - 0x7e0000`. Registers get a second `alloca`. A
+pointer computed at run time is used as the caller's pointer (`inttoptr`)
+unless its expression can evaluate into one of the concrete windows — it
+mentions a constant inside the window, or a merged variable that was observed
+holding one — in which case it is rebased when it does. An address built only
+from the function's arguments cannot: the windows are artefacts of the
+analysis and no caller knows them. That distinction is what lets SROA split
+`%stack` into scalars and delete it.
+
+| stage | lines | note |
+|---|---:|---|
+| lowered | 65,373 | 1558 blocks, 191 variable slots, a 64 KiB `@env` constant |
+| `opt -O2` | 69 | 8 blocks, 7 phis, 3 loads, **0 stores**: stack, register file and flags words are gone |
+| + stubs linked in, `internalize`, `opt -O2` | **40** | 6 blocks, 8 edges: the prologue folds away |
+
+After the first `opt -O2` the module is already a function, but it is still
+VMProtect's function: the two `cpuid` calls, the `OSBuildNumber` read and the
+table loop survive, because `cpuid` is an external call LLVM cannot see
+through. This is
+[`check_serial.devirt.opt.ll`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/full_analysis_mba/check_serial.devirt.opt.ll):
+
+```llvm
+define range(i64 0, 2) i64 @check_serial(i64 %arg0, i64 %arg1, i64 %arg2, i64 %arg3) local_unnamed_addr #1 {
+entry:
+  %regs.sroa.7496.sroa.0.0.extract.trunc1747 = trunc i64 %arg0 to i32
+  %v2527 = tail call i32 @opaque.cpuid_0(i32 1, i32 %regs.sroa.7496.sroa.0.0.extract.trunc1747)
+  %v2529 = tail call i32 @opaque.cpuid_1(i32 1, i32 %regs.sroa.7496.sroa.0.0.extract.trunc1747)
+  %0 = and i32 %v2527, 4080
+  %v3004 = icmp eq i32 %0, 4064                 ; cpuid(1).eax[11:4] == 0xFE
+  %1 = and i32 %v2527, -49
+  %spec.select = select i1 %v3004, i32 %1, i32 %v2527
+  %v6801 = and i32 %v2529, 16777215
+  %v7601 = add i32 %spec.select, %v6801         ; the key derived from CPUID
+  %v1251913149 = icmp eq i32 %v7601, 0
+  br i1 %v1251913149, label %n679.x0, label %n679.x1
+
+n679.x0:                                          ; preds = %n679.x1, %entry
+  %v21500 = inttoptr i64 %arg0 to ptr
+  %v21501 = load i8, ptr %v21500, align 1       ; *p
+  %v22261 = icmp eq i8 %v21501, 0
+  br i1 %v22261, label %n1035, label %n1034
+
+n679.x1:                                          ; preds = %entry, %n679.x1  -- the prologue loop
+  %stack.sroa.2179.0.off01173413151 = phi i32 [ %v16682, %n679.x1 ], [ 1940493230, %entry ]
+  %stack.sroa.2091.013150 = phi i64 [ %v16412, %n679.x1 ], [ 24, %entry ]
+  %v16412 = add i64 %stack.sroa.2091.013150, 8
+  %v16682 = add i32 %stack.sroa.2179.0.off01173413151, -1
+  %v16713 = icmp ne i32 %stack.sroa.2179.0.off01173413151, 1
+  tail call void @llvm.assume(i1 %v16713)       ; B9 was lowered as `unreachable`
+  %v11449 = inttoptr i64 %v16412 to ptr
+  %v11451 = icmp ult i64 %v16412, 65536
+  %v11452 = getelementptr i8, ptr @env, i64 %v16412
+  %v11453 = select i1 %v11451, ptr %v11452, ptr %v11449
+  %v11454 = load i32, ptr %v11453, align 8      ; the next table entry
+  %2 = xor i32 %v11454, %v7601
+  %v12519 = icmp eq i32 %2, -559166943
+  br i1 %v12519, label %n679.x0, label %n679.x1
+
+n1034:                                            ; preds = %n679.x0, %n1278  -- the hash loop
+  %v4424612574 = phi i64 [ %v37701, %n1278 ], [ %arg0, %n679.x0 ]
+  %v4490212573.in = phi i8 [ %v37947, %n1278 ], [ %v21501, %n679.x0 ]
+  %stack.sroa.2149.0.off0 = phi i32 [ %v4493912575.off0, %n1278 ], [ -1056969199, %n679.x0 ]
+  %v29892 = icmp eq i8 %v4490212573.in, 45
+  br i1 %v29892, label %n1278, label %n1276.x1
+
+n1035:                                            ; preds = %n679.x0, %n1547.x1
+  %stack.sroa.2149.1.off011942 = phi i1 [ %4, %n1547.x1 ], [ false, %n679.x0 ]
+  %v40439 = zext i1 %stack.sroa.2149.1.off011942 to i64
+  ret i64 %v40439
+
+n1276.x1:                                         ; preds = %n1034
+  %regs.sroa.7496.sroa.0.0.extract.trunc1909 = zext i8 %v4490212573.in to i32
+  %v38136 = shl i32 %stack.sroa.2149.0.off0, 4
+  %v38783 = lshr i32 %stack.sroa.2149.0.off0, 3
+  %v40818 = xor i32 %v38783, %v38136
+  %v41822 = add i32 %v40818, %regs.sroa.7496.sroa.0.0.extract.trunc1909
+  %3 = xor i32 %v41822, -559038737
+  br label %n1278
+
+n1278:                                            ; preds = %n1034, %n1276.x1
+  %v4493912575.off0 = phi i32 [ %stack.sroa.2149.0.off0, %n1034 ], [ %3, %n1276.x1 ]
+  %v37701 = add i64 %v4424612574, 1
+  %v37946 = inttoptr i64 %v37701 to ptr
+  %v37947 = load i8, ptr %v37946, align 1
+  %v39008 = icmp eq i8 %v37947, 0
+  br i1 %v39008, label %n1547.x1, label %n1034
+
+n1547.x1:                                         ; preds = %n1278
+  %4 = icmp eq i32 %v4493912575.off0, -271374419
+  br label %n1035
+}
+```
+
+Read it top to bottom and it is Part 10.1 in IR: the CPUID key, the loop over
+the table with the count starting at `1940493230`, and only then `*p`. The last
+step is the "function view": linking in the stub definitions (every opaque
+result is 0) together with the solved `@env` makes the first table entry match
+at compile time, the loop disappears, and what is left is `check_serial`. The
+first version of this pipeline produced 59 lines there, correct — it agrees
+with the unprotected build on every serial — but not clean: the hash update was
+twelve lines of `and` / `or` / `xor -1` over shifted pieces, and the accumulator
+was split into four phis. Part 12 is about those twelve lines.
+
+
+## Part 12 — The last mile: an MBA where the `xor` was
+
+This is what the first version of the recovered loop body looked like, straight
+from `opt`:
+
+```llvm
+n1276.x1:
+  %regs.sroa.7496.sroa.0.0.extract.trunc1909 = zext i8 %v4060412521.in to i32
+  %v35825 = xor i28 %stack.sroa.2149.0.off0, -1
+  %v35828 = zext i28 %v35825 to i32
+  %v35829 = shl nuw i32 %v35828, 4
+  %v35082.masked = and i32 %stack.sroa.2149.0.off3, 536870896
+  %0 = or i32 %v35829, %v35082.masked
+  %v37105 = xor i32 %0, -16
+  %v37118 = and i28 %stack.sroa.2149.0.off7, %v35825
+  %v37125 = zext nneg i28 %v37118 to i32
+  %v37126 = shl nuw nsw i32 %v37125, 4
+  %v37127 = and i32 %stack.sroa.2149.0.off3, 15
+  %v37128 = or disjoint i32 %v37126, %v37127
+  %v37117 = or i32 %v37128, %v37105
+  %v38037 = add i32 %v37117, %regs.sroa.7496.sroa.0.0.extract.trunc1909
+  %1 = xor i32 %v38037, -559038737
+```
+
+Z3 proves that the twelve lines above the `add` are exactly
+`(A & ~B) | (~A & B)` with `A = acc << 4` and `B = acc >> 3` — the textbook
+mixed boolean-arithmetic (MBA) identity for `A ^ B`. Three things conspire to
+leave it there:
+
+1. **VMProtect has no `xor` handler** (Part 3). The bytecode computes it as
+   `~(~A | B) | ~(A | ~B)` with `NOR` / `NAND`, over the whole 32-bit words.
+2. **Z3 slices it.** `z3.simplify` pushes `~`, `|` and the constant shifts
+   through `concat` / `extract`, so the lowering receives
+   `Concat(~(Extract(27,0,acc) | Concat(7, ~Extract(31,7,acc))), Extract(6,3,acc))`
+   — a 28-bit piece and a 4-bit piece, with the shift folded into the slice
+   bounds and the low nibble constant-folded away.
+3. **LLVM keeps the slices.** SROA turns the pieces into separate phis
+   (`acc`, `acc & 0xfffffff`, `acc >> 3`, `acc >> 7`) and InstCombine's
+   known-bits narrowing never sees the two halves as one word, so the
+   `(A & ~B) | (~A & B)` -> `A ^ B` fold never fires.
+
+The obvious candidates for cleaning this up are the MBA simplifiers:
+[SiMBA](https://github.com/DenuvoSoftwareSolutions/SiMBA) (linear MBAs),
+[GAMBA](https://github.com/DenuvoSoftwareSolutions/GAMBA) (general MBAs, built
+on SiMBA) and [CoBRA](https://github.com/trailofbits/CoBRA) (Trail of Bits,
+handles shifts and constant masks). All three were tried on the expression
+exactly as LLVM left it, and on its whole-word form:
+
+| input | SiMBA | GAMBA | CoBRA |
+|---|---|---|---|
+| `(A&~B)\|(~A&B)` | `A^B` | `A^B` | `A ^ B` |
+| `~(~A\|B) \| ~(A\|~B)` (VMProtect's NOR form) | `A^B` | `A^B` | `A ^ B` |
+| the sliced 28/4-bit form over `acc` with shifts | wrong (no shifts) | no result | unsupported ("not semilinear") |
+| the same with the known-zero bits written as masks | wrong (not linear) | equivalent but no smaller | equivalent but no smaller |
+
+So the tools are not the problem, the *slicing* is: none of them can be handed
+the term LLVM ends up with, and none should be, because the damage is done
+upstream. The fix is in two parts, both applied to the Z3 term before it is
+lowered:
+
+- **Hoisting** —
+  [`scripts/concat_hoist.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/concat_hoist.py)
+  undoes step 2. `Concat(0_k, Extract(31, k, x))` becomes `x >> k`,
+  `Concat(Extract(31-k, 0, x), 0_k)` becomes `x << k`, a concat whose pieces
+  are the same bitwise operator over aligned slices becomes that operator over
+  whole words, and a concat with one bitwise piece next to slices Z3
+  constant-folded is widened to the whole word and checked by the solver. It
+  is the general form of the trick the lowering already used for `x ^ C`
+  (Z3 spells that as a concat of seventeen inverted and plain slices, and LLVM
+  never reassembles them). It runs on every lowered term, always. With it
+  alone LLVM already recovers the `xor`: 59 lines become 40.
+- **An MBA pass at the same seam** —
+  [`scripts/mba_lift.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/mba_lift.py),
+  enabled with `--mba <cobra-cli>`. Every maximal subtree of `~ & | ^ + - *` is
+  printed with its other children (shifts, extracts, loads, variables) as
+  opaque atoms, handed to `cobra-cli`, parsed back and Z3-verified before it
+  replaces the original. CoBRA was chosen as the backend because it is a 20 ms
+  native binary that handles shifts and constant masks; SiMBA and GAMBA plug
+  into the same one-line seam. On this binary: 37 `cobra-cli` calls, 99
+  skeletons simplified, 0 rejected — and the same 40 lines, since here LLVM
+  did not need the help. It is there for the patterns LLVM would *not* fold,
+  which VMProtect's other handlers, or a build with mutation on, will produce.
+  (CoBRA also ships an LLVM pass plugin; it does not link on Windows, where
+  `opt.exe` exports no symbols for a plugin to bind to.)
+
+The result,
+[`full_analysis_mba/check_serial.function.ll`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/full_analysis_mba/check_serial.function.ll),
+in full:
+
+```llvm
+define range(i64 0, 2) i64 @check_serial(i64 %arg0, i64 %arg1, i64 %arg2, i64 %arg3) local_unnamed_addr #0 {
+entry:
+  %v21500 = inttoptr i64 %arg0 to ptr
+  %v21501 = load i8, ptr %v21500, align 1
+  %v22261 = icmp eq i8 %v21501, 0
+  br i1 %v22261, label %n1035, label %n1034
+
+n1034:                                            ; preds = %entry, %n1278
+  %v4424612574 = phi i64 [ %v37701, %n1278 ], [ %arg0, %entry ]
+  %v4490212573.in = phi i8 [ %v37947, %n1278 ], [ %v21501, %entry ]
+  %stack.sroa.2149.0.off0 = phi i32 [ %v4493912575.off0, %n1278 ], [ -1056969199, %entry ]
+  %v29892 = icmp eq i8 %v4490212573.in, 45
+  br i1 %v29892, label %n1278, label %n1276.x1
+
+n1035:                                            ; preds = %n1547.x1, %entry
+  %stack.sroa.2149.1.off011942 = phi i1 [ %1, %n1547.x1 ], [ false, %entry ]
+  %v40439 = zext i1 %stack.sroa.2149.1.off011942 to i64
+  ret i64 %v40439
+
+n1276.x1:                                         ; preds = %n1034
+  %regs.sroa.7496.sroa.0.0.extract.trunc1909 = zext i8 %v4490212573.in to i32
+  %v38136 = shl i32 %stack.sroa.2149.0.off0, 4
+  %v38783 = lshr i32 %stack.sroa.2149.0.off0, 3
+  %v40818 = xor i32 %v38783, %v38136
+  %v41822 = add i32 %v40818, %regs.sroa.7496.sroa.0.0.extract.trunc1909
+  %0 = xor i32 %v41822, -559038737
+  br label %n1278
+
+n1278:                                            ; preds = %n1276.x1, %n1034
+  %v4493912575.off0 = phi i32 [ %stack.sroa.2149.0.off0, %n1034 ], [ %0, %n1276.x1 ]
+  %v37701 = add i64 %v4424612574, 1
+  %v37946 = inttoptr i64 %v37701 to ptr
+  %v37947 = load i8, ptr %v37946, align 1
+  %v39008 = icmp eq i8 %v37947, 0
+  br i1 %v39008, label %n1547.x1, label %n1034
+
+n1547.x1:                                         ; preds = %n1278
+  %1 = icmp eq i32 %v4493912575.off0, -271374419
+  br label %n1035
+}
+```
+
+`-1056969199` is `0xC0FFEE11`, `-559038737` is `0xDEADBEEF`, `-271374419` is
+`0xEFD327AD`, `45` is `'-'`. Transcribed by hand, that is:
+
+```c
+uint64_t check_serial(const char *p) {
+    char c = *p;
+    if (c == 0) return 0;
+    uint32_t acc = 0xC0FFEE11;
+    do {
+        if (c != '-')
+            acc = (((acc << 4) ^ (acc >> 3)) + (uint8_t)c) ^ 0xDEADBEEF;
+        c = *++p;
+    } while (c != 0);
+    return acc == 0xEFD327AD;
+}
+```
+
+which is `serial_check.c`, control flow included. The protected binary is
+2.0 MB with a 900 KB VM section; the function that came back out of it is 40
+lines of IR, and all three magic constants, the `'-'` test and the byte-wise
+walk of the string are in the clear.
+
+### 12.1 A standalone executable
+
+To close the loop, the recovered function is compiled back to a native program.
+[`full_analysis_mba/check_serial.rewritten.ll`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/full_analysis_mba/check_serial.rewritten.ll)
+is the function above, marked `noinline` so it stays a function one can find
+in a disassembler, followed by a hand-written `main` that does what
+`serial_check.c`'s does — usage text with no argument, then `check_serial(argv[1])`
+and one of two messages:
+
+```llvm
+declare i32 @printf(ptr, ...)
+
+@.str.usage   = private unnamed_addr constant [20 x i8] c"usage: %s <serial>\0A\00"
+@.str.example = private unnamed_addr constant [28 x i8] c"example: %s ABCD-EFGH-1234\0A\00"
+@.str.bad     = private unnamed_addr constant [40 x i8] c"VMP_ANALYSIS_SERIAL_BAD: access denied\0A\00"
+@.str.ok      = private unnamed_addr constant [40 x i8] c"VMP_ANALYSIS_SERIAL_OK: access granted\0A\00"
+
+define i32 @main(i32 %argc, ptr readonly captures(none) %argv) local_unnamed_addr #1 {
+entry:
+  %argc.too.few = icmp slt i32 %argc, 2
+  br i1 %argc.too.few, label %usage, label %do_check
+
+usage:
+  %argv0.slot = getelementptr inbounds ptr, ptr %argv, i64 0
+  %argv0 = load ptr, ptr %argv0.slot, align 8
+  %u1 = call i32 (ptr, ...) @printf(ptr @.str.usage, ptr %argv0)
+  %u2 = call i32 (ptr, ...) @printf(ptr @.str.example, ptr %argv0)
+  ret i32 2
+
+do_check:
+  %argv1.slot = getelementptr inbounds ptr, ptr %argv, i64 1
+  %argv1 = load ptr, ptr %argv1.slot, align 8
+  %serial.i64 = ptrtoint ptr %argv1 to i64
+  %chk = call i64 @check_serial(i64 %serial.i64, i64 0, i64 0, i64 0)
+  %chk.ok = icmp ne i64 %chk, 0
+  br i1 %chk.ok, label %granted, label %denied
+
+denied:
+  %d1 = call i32 (ptr, ...) @printf(ptr @.str.bad)
+  ret i32 1
+
+granted:
+  %g1 = call i32 (ptr, ...) @printf(ptr @.str.ok)
+  ret i32 0
+}
+```
+
+```
+clang -O2 full_analysis_mba/check_serial.rewritten.ll -o full_analysis_mba/check_serial.recovered.nomba.exe
+```
+
+[`check_serial.recovered.nomba.exe`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/full_analysis_mba/check_serial.recovered.nomba.exe)
+(142 KB, no VMProtect section, no VM) is identical to the **unprotected**
+`serial_check.exe` in exit code and standard output on 199 of 199 serials —
+the 7 chosen ones plus 192 random — and on the no-argument usage path. So the
+chain is complete: C source -> MSVC -> VMProtect -> *this analysis* -> LLVM IR
+-> clang -> a program indistinguishable, from the outside, from the one
+VMProtect was given.
+
+
+## Part 13 — Verification, and what is not proven
+
+`lli` runs the optimized module (with the `cpuid` stubs as an extra module) and
+the function view on each serial, and the verdict is compared with the
+**unprotected** `serial_check.exe`. The protected executable is never
+launched: the VMProtect demo shows a MessageBox on every start. Serials:
+`VMP-2026-DEMO` (granted), `VMP-2026-DEMX`, `0G9OLL91` (a solver-found key),
+`AAAAAAAA`, `A`, `VMP2026DEMO` and `V-M-P2026DEMO` (dashes are skipped), plus
+23 random ones of 1–16 characters over `[A-Z0-9-]` from a fixed seed. 30 of 30
+agree, for both modules; the recompiled executable of Part 12.1 agrees on 199.
+
+This is differential testing, not a proof. An equivalence proof against the
+unprotected function (both are small enough for Z3 at a bounded length) is the
+natural next step and is not done. The rest of the honest list:
+
+- **One small function.** `check_serial` makes no calls. Calls out of the VM
+  other than `VM_ENTRY` are recorded as opaque externals and lowered as
+  declarations; that path has never been exercised.
+- **Assumed, not discovered**: the VIP register (`--vip-reg`, default `RSI`),
+  the `push key ; call VM_ENTRY` stub shape, and the handler table (used only
+  for node names and as the set of node points).
+- **No path constraints means over-approximation.** Infeasible edges can
+  appear in the virtual CFG. None did here — every fork was a genuine two-way
+  branch — but a function with correlated branches would show spurious paths;
+  the emitted code would still be correct, just larger.
+- **Aliasing.** A store through a run-time pointer is assumed not to hit the
+  VM's own state unless the pointer's expression can evaluate into a concrete
+  window. Code that leaks a pointer to a local through arithmetic the analysis
+  cannot see would be mislowered.
+- **The function view assumes an environment**: `cpuid` = 0 and the four
+  solved bytes. It is the assumption under which VMProtect lets the body run,
+  not a fact about a machine. The intermediate module keeps the check.
+- **One abandoned path** (B9), lowered as `unreachable`; LLVM therefore
+  assumes the prologue check never fails.
+- **VMProtect options.** Everything but virtualization was off: no mutation,
+  no import protection, no packing, operands unencrypted. Each of those is a
+  separate experiment.
+
+Reproducing all of it is one command (about a minute, plus `opt`, `llvm-link`
+and `lli` from LLVM 21):
+
+```
+python scripts/vmprotect_full_analysis.py                                     # -> full_analysis/
+python scripts/vmprotect_full_analysis.py --mba tools/cobra-cli.exe --out full_analysis_mba
+```
+
+Each stage prints what a reader needs to judge it: node and edge counts, how
+many merges widened, how many virtual branches forked, any abandoned path with
+its reason, any instruction dragon could not lift, each simplified condition,
+the solved environment bytes, line counts before and after `opt`, and one line
+per verified serial.
+
+
+## Part 14 — dragon-tales lifter work done for this
 
 
 Lifting all 256 handlers and grepping for `UNDEF` definitions that survive DSE is a
@@ -1961,7 +2742,42 @@ so a handler with internal `jmp`s is one IGNIL block) and
 VMProtect junk into a list of dead addresses).
 
 
-## Part 10 — The scripts
+
+The trace-free pipeline of Part 9 found a second round, each gap by this
+binary and each the silent kind — an instruction lifted to *nothing* rather
+than to `UNDEF`, so the lifted code computed a different function than the
+machine code with no signal anywhere:
+
+- **Accumulator short forms** (gap #5): x86 has a second, shorter encoding for
+  `<op> eAX, imm` with no ModRM byte — `sub al, 0x22` and `test al, 5` are
+  `2C 22` and `A8 05`, not `80 E8 22` and `F6 C0 05` — and none of the 36
+  were in the dispatch table. They sit on the handlers' flag path, so a
+  virtual branch went to a garbage address. The fix rebuilds a short form as
+  the generic reg-imm `MCInst` it is an encoding of; and the unknown-instruction
+  fallback now marks **implicit** register defs `UNDEF` too, so the next gap
+  of this shape fails loud.
+- **`BT`, and RIP-relative operands** (gap #8): the latter read a stale `RIP`
+  inside a multi-instruction trace.
+- **A sweep for silent wrongness** (gap #9): `ADC`/`SBB`, one-operand
+  `MUL`/`IMUL`/`DIV`/`IDIV`, `SETcc`, four condition codes, and — found by the
+  same Unicorn differential sweep of 136k assertions — an `LLVMLifter` bug: a
+  function that only mentions `eax` never zero-extended into `rax`.
+
+And the symbolic executor itself grew what the exploration needed: a
+`SymbolicState::merge`; large concrete blobs stored as shared immutable images
+under a byte overlay (a snapshot used to copy one Z3 handle per byte of the
+2 MB image, which makes "a state per node" impossible); `RunResult::unresolved`,
+the address and value of every access through an unconstrained pointer, which
+the lowering needs; and the boring one that mattered most — operations on
+literals fold immediately, and `evaluate`, `isSatisfiable` and conditional
+jumps skip the solver when the value is a literal. That was the O(n²) that
+Part 8 blamed on the executor. Unlifted instructions now mark their implicit
+results and flags `UNDEF` and are listed by `IGNILBlock.unlifted()`, so the
+script can report them. Details: gaps #5, #8 and #9 in
+`dragon-tales/ToDo/LifterGaps.md`.
+
+
+## Part 15 — The scripts
 
 Everything above is reproducible. All of it — the tooling, the binaries, the
 Binary Ninja databases and the generated data — lives in the companion repo
@@ -2001,6 +2817,30 @@ pointing at its `python/` directory:
 - **[`scripts/binja_dump_il.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/binja_dump_il.py)** — Binary Ninja console script to dump
   LLIL/MLIL/HLIL per handler for the fifth view.
 
+- **[`scripts/vmprotect_full_analysis.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/vmprotect_full_analysis.py)** — Parts 9–13 in one file: the
+  `(pc, VIP)` exploration, Z3 condition simplification, environment synthesis,
+  the LLVM lowering, `opt` / `llvm-link` / `lli`, and the CFG report. Writes
+  [`full_analysis/`](https://github.com/Fare9/Dragons-vs-VMs/tree/main/full_analysis)
+  (and, with `--mba`, [`full_analysis_mba/`](https://github.com/Fare9/Dragons-vs-VMs/tree/main/full_analysis_mba)):
+  `.vmcfg.json` / `.vmcfg.dot`, `.devirt.ll`, `.devirt.opt.ll`,
+  `.function.ll` / `.function.dot`, and `.cfg.md` with both CFGs as Mermaid.
+- **[`scripts/concat_hoist.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/concat_hoist.py)** — the Z3-term normalizer of Part 12: whole-word
+  shifts and bitwise operators back from Z3's concat-of-slices.
+- **[`scripts/mba_lift.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/mba_lift.py)** — the MBA pass of Part 12: bitwise/arithmetic skeletons
+  to `cobra-cli` and back, every rewrite Z3-verified.
+  [`tools/cobra-cli.exe`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/tools/cobra-cli.exe)
+  is a Windows build of CoBRA (build steps in the repo's `DEPENDENCIES.md`).
+- **[`FINAL_ANALYSIS.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/FINAL_ANALYSIS.md)** — the long form of Parts 9–13, with every number
+  and the reasoning behind each design choice.
+
 **Companion file:** **[`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Dragon%20power%20against%20VMProtect%20-%20Handlers.md)** — all 256 handlers, four views each,
 plus the opcode summary and the static bytecode decode at VIP.
+
+**Where it stands now.** The VM is understood (Parts 1–6), the function was
+recovered from the file alone with no trace (Parts 9–11), the last MBA left
+by VMProtect's NOR-encoded `xor` is gone (Part 12), and the recompiled
+executable is indistinguishable from the original on 199 serials (Part 12.1).
+What is *not* done is in Part 13: an equivalence proof instead of differential
+testing, calls out of the VM, and every VMProtect option other than
+virtualization.
 

@@ -19,6 +19,13 @@
 
     {{ .Content }}
 
+    {{ if .Store.Get "hasMermaid" }}
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+    </script>
+    {{ end }}
+
     {{ partial "fuzzsociety-trainings.html" . }}
 
     <nav class="chapter-pager">

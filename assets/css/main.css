@@ -922,3 +922,12 @@ a:hover .fs-logo { opacity: 1; }
 
 .prose details:not(.post-toc) > summary:hover { color: var(--cyan); }
 .prose details[open]:not(.post-toc) > summary { margin-bottom: 0.6rem; }
+
+/* Mermaid diagrams (render-codeblock-mermaid.html) */
+.prose pre.mermaid {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  text-align: center;
+  overflow-x: auto;
+}
