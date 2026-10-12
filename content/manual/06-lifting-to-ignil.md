@@ -1,6 +1,6 @@
 ---
 title: "Lifting to IGNIL"
-weight: 5
+weight: 6
 summary: "dragon-tales' architecture-independent IL"
 ---
 
@@ -9,7 +9,7 @@ Everything up to this point has been architecture-specific: `Instruction`,
 code. **IGNIL** (dragon-tales' intermediate language) is where that stops —
 it's a small, architecture-independent instruction set that every lifted
 block gets translated into, so downstream analysis (the backward slicer,
-chapter 6's LLVM lifter) doesn't need to know anything about the source
+chapter 7's LLVM lifter) doesn't need to know anything about the source
 architecture at all.
 
 ## The model
@@ -73,7 +73,7 @@ or grab `ops()`.
 ## Getting IGNIL out of a `Graph`
 
 IGNIL is populated **in the same call** as the CFG/function analysis from
-chapter 4 — there's no separate "now lift to IGNIL" step. The `Graph`-overload
+chapter 5 — there's no separate "now lift to IGNIL" step. The `Graph`-overload
 `disassemble()` (C++) / `analyze()` (Python) does both at once:
 
 {{< compare >}}
@@ -134,7 +134,7 @@ The equivalent for x86/x86-64 is `dragon::x86` / `dragon.x86` (`RAX`, `EAX`,
 
 ## Walking the running example
 
-Same ARM64 `foo(x)` graph from chapters 3-4, now dumping its four IGNIL
+Same ARM64 `foo(x)` graph from chapters 4-5, now dumping its four IGNIL
 blocks:
 
 ```python
@@ -215,7 +215,7 @@ A few things worth pointing out:
   `0x1010`'s `b end_branch` does produce a real `JMP`, but `0x1018` falls
   through to `0x101c` with no branch instruction at all in the source. The
   lifter still materializes a `JMP` for it. This isn't incidental: a block
-  with no terminator `Op` at all is invalid input to chapter 6's LLVM
+  with no terminator `Op` at all is invalid input to chapter 7's LLVM
   lifter (an LLVM basic block *must* end in a terminator), so `liftBlock()`
   explicitly synthesizes the fall-through edge from the block's known CFG
   successor whenever the source didn't already end in a branch.
@@ -234,6 +234,6 @@ an explicit `UNDEF` rather than silently producing a wrong value; check for
 `UNDEF` in a block's ops if a slice or downstream analysis is coming back
 empty.
 
-Chapter 6 picks IGNIL up exactly where this chapter leaves it: `LLVMLifter`
+Chapter 7 picks IGNIL up exactly where this chapter leaves it: `LLVMLifter`
 consumes a `Function` and its blocks' `ignil::Block`s and produces real,
 optimizable LLVM IR.

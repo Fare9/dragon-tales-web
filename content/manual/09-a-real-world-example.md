@@ -1,6 +1,6 @@
 ---
 title: "A Real-World Example"
-weight: 7
+weight: 9
 summary: "Compiling C, pulling .text with objdump, and running it through the whole pipeline"
 ---
 
@@ -11,7 +11,7 @@ instruction selector reaches for encodings a hand-written example never
 would, and — as this chapter shows directly rather than glossing over —
 that's exactly where you find the edges of what a lifter currently
 supports. This chapter compiles real C, extracts its `.text`, and runs it
-through the full pipeline from chapters 3-6, including the rough edges.
+through the full pipeline from chapters 4-7, including the rough edges.
 
 ## The source
 
@@ -106,6 +106,15 @@ with open("sum.text", "rb") as f:
     raw = f.read()
 ```
 
+> **Or skip `objcopy` entirely.** The `objdump`/`objcopy` dance above is the
+> from-scratch way to get at `.text`, and it's worth seeing once. But
+> [chapter 8](../08-loading-real-binaries/)'s loader reads `sum.o` directly —
+> `dragon.LoadedImage.load_file("sum.o")` parses the object, hands back the
+> architecture and section table, and `img.disassemble()` lifts every
+> executable section at its own address in one call. The manual steps here
+> stay useful when you only have a raw blob (a `.text` dump, shellcode, a
+> memory snapshot) with no container around it.
+
 ## Disassembling and analyzing it
 
 ```python
@@ -156,7 +165,7 @@ IGNILBlock @ 0x0
 It isn't lifted to `UNDEF` (which at least marks the destination as
 unknown, the way `PF`/`AF` above honestly do for x86's rarely-modeled
 parity/aux-carry flags) — it's simply absent, exactly the same "gap" chapter
-3 warned about with `hasIndirectTarget`/unclassified instructions, except
+4 warned about with `hasIndirectTarget`/unclassified instructions, except
 here it's not an exotic edge case: **immediate-to-memory `mov` is one of
 the single most common instruction forms in real x86 code**, and it isn't
 in `X86IGNILLifter`'s opcode dispatch yet (only `MOV reg, reg/imm` and `MOV
@@ -180,7 +189,7 @@ disassembly listing above it has instructions.
 
 The rest of the function — the actual loop — uses only register-form
 `mov`/`add`/`cmp` and register+immediate-offset `load`/`store`, all of
-which *are* supported, so it lifts and optimizes exactly like chapters 5-6
+which *are* supported, so it lifts and optimizes exactly like chapters 6-7
 would predict:
 
 ```python
@@ -314,7 +323,7 @@ The blocks and CFG are all there (`graph.block_addresses()` returns all
 three), but nothing gets recognized as a *function*. Why: this is a leaf
 function (it never calls anything), so at `-O1` Clang doesn't bother
 establishing a stack frame — no `stp x29, x30, [sp, ...]!`, no `mov x29,
-sp`. Chapter 5's ARM64 running example (`foo`, back in chapter 2) always
+sp`. Chapter 6's ARM64 running example (`foo`, back in chapter 3) always
 had exactly that prologue, because it was hand-written to include one.
 dragon-tales' current ARM64 function-start heuristic looks for that
 `stp`-based frame-establishment pattern specifically — a real, common ARM64
@@ -324,19 +333,19 @@ start, which means `graph.get_function()` returns an invalid view and
 `LLVMLifter.lift()` has nothing to lift.
 
 **The practical takeaway:** `Instruction`/`BasicBlock`/IGNIL-level analysis
-(chapters 3 and 5) works on this code just fine — it's only the
-function-boundary/prologue heuristic (chapter 4) that misses it. If you're
+(chapters 4 and 6) works on this code just fine — it's only the
+function-boundary/prologue heuristic (chapter 5) that misses it. If you're
 exploring a real ARM64 binary and `function_addresses()` comes back sparse
 or empty, don't assume the disassembly failed — check whether the
 functions in question actually establish a frame; leaf functions and
 tail-call-heavy code frequently don't. For a from-scratch ARM64 function
 that *does* get recognized end-to-end (including the LLVM IR step), the
-`foo(x)` example running through chapters 2-6 is the reference — the
+`foo(x)` example running through chapters 3-7 is the reference — the
 difference between it and this one is exactly that hand-written prologue.
 
 ## Where to go from here
 
-That is the pipeline end to end. Chapter 8 goes a step further and asks the
+That is the pipeline end to end. Chapter 10 goes a step further and asks the
 code questions reading it can't answer — what input satisfies this check,
 which branches are real, where a computed jump goes. For topics beyond that,
 see [IDEAS.md](https://github.com/Fare9/dragon-tales/blob/main/docs/manual/IDEAS.md)
@@ -344,5 +353,5 @@ see [IDEAS.md](https://github.com/Fare9/dragon-tales/blob/main/docs/manual/IDEAS
 you run into a gap like the two in this chapter on your own code, that's
 not a dead end: both are scope limitations of the current lifter/analysis,
 not fundamental — the IGNIL opcode set and the `Graph`/`BasicBlock`/`Function`
-model in chapters 4-5 have everything needed to describe the missing
+model in chapters 5-6 have everything needed to describe the missing
 cases; they just need a dispatch entry or a heuristic extended.

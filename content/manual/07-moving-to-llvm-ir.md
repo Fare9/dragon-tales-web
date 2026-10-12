@@ -1,10 +1,10 @@
 ---
 title: "Moving to LLVM IR"
-weight: 6
+weight: 7
 summary: "From IGNIL to optimizable LLVM IR"
 ---
 
-IGNIL (chapter 5) is architecture-independent, but it's still a bespoke IR
+IGNIL (chapter 6) is architecture-independent, but it's still a bespoke IR
 with a small, fixed opcode set — there's no optimizer for it. `LLVMLifter`
 closes that gap: it translates a `Function`'s IGNIL blocks into real LLVM
 IR, so you get everything LLVM's optimization pipeline already knows how to
@@ -49,7 +49,7 @@ Every lifted function has the signature `void @sub_<address>(ptr %mem, ptr %regs
 at `0x1000` becomes `@sub_4096`). Two opaque pointers carry all lifted
 state:
 
-- **`%regs`** — the same flat register address space from chapter 5's
+- **`%regs`** — the same flat register address space from chapter 6's
   `Reg{offset, width}` values. Reading `X0`/`W0` at the start of the
   function is a `getelementptr` on `%regs` at offset 0, exactly matching
   `dragon::arm::X0`'s offset.
@@ -71,11 +71,11 @@ once via `optimize()`/`run_mem2reg()` + friends in Python):
 | `runMem2Reg()` | Promotes the register-file `alloca`s to SSA values, inserting `phi` nodes at block merges. This is what turns "read/write a stack slot" into real dataflow. |
 | `runInstCombine()` | Folds arithmetic/comparison patterns — notably the mask/OR sequences IGNIL's sub-register handling produces. |
 | `runGVN()` | Eliminates redundant loads (global value numbering) — e.g. re-reading `%mem[SP]` twice in a row collapses to one load. |
-| `runDCE()` | Removes now-dead computations — very relevant here, since IGNIL always computes *all four* condition flags per comparison (chapter 5), and DCE deletes the ones the function never actually branches on. |
+| `runDCE()` | Removes now-dead computations — very relevant here, since IGNIL always computes *all four* condition flags per comparison (chapter 6), and DCE deletes the ones the function never actually branches on. |
 
 ## Watching it optimize: the running example
 
-Lifting the same ARM64 `foo(x)` function from chapters 3-5 and printing
+Lifting the same ARM64 `foo(x)` function from chapters 4-6 and printing
 `ir()` before and after `optimize()`:
 
 ```python
@@ -88,7 +88,7 @@ lifter.optimize()
 print(lifter.ir())      # optimized
 ```
 
-**Non-optimized** — a near-literal transcription of chapter 5's IGNIL, one
+**Non-optimized** — a near-literal transcription of chapter 6's IGNIL, one
 `alloca` per touched register, explicit loads/stores for every access:
 
 ```text
@@ -227,7 +227,7 @@ This is C++-only; the Python/C API only exposes the rendered IR text via
 
 ## Scope
 
-Same as chapter 5 — `LLVMLifter` consumes whatever `getIGNILBlock()` can
+Same as chapter 6 — `LLVMLifter` consumes whatever `getIGNILBlock()` can
 produce, so it inherits IGNIL's scope: x86 (32/64) and ARM64 only. A
 `Function` with a block missing an IGNIL translation (ARM32, RISC-V, or a
 gap from an unsupported addressing mode) makes `lift()` return `false`

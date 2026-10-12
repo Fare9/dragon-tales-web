@@ -1,6 +1,6 @@
 ---
 title: "Disassembling Your First Binary"
-weight: 3
+weight: 4
 summary: "Turning bytes back into instructions"
 ---
 
@@ -24,7 +24,7 @@ if (!dis.isValid()) { /* unsupported architecture / LLVM init failure */ }
 
 Same construction pattern as `Assembler`: pass an `Architecture` and a
 `Configuration`, check `isValid()`. The `cpu`/`features` fields from
-chapter 2 apply here identically — a disassembler configured for the
+chapter 3 apply here identically — a disassembler configured for the
 generic ARM32 baseline won't decode `bx`, the exact same restriction that
 applied to assembling it.
 
@@ -97,7 +97,7 @@ print(graph.function_addresses())
 {{< /pane >}}
 {{< /compare >}}
 
-Chapter 4 covers `BasicBlock` and `Function` in depth — this chapter only
+Chapter 5 covers `BasicBlock` and `Function` in depth — this chapter only
 establishes *which call gets you there*.
 
 > **A pitfall worth naming explicitly:** it's tempting to build a `Graph`
@@ -232,7 +232,7 @@ for insn in graph.instructions():
 
 ## Disassembling the running example
 
-Picking up the ARM64 bytes assembled in chapter 2 (`foo(x)`: returns `1` if
+Picking up the ARM64 bytes assembled in chapter 3 (`foo(x)`: returns `1` if
 `x > 0`, else `-1`), run them through the full analysis path so the branch
 and its target are resolved:
 
@@ -280,8 +280,8 @@ for insn in graph.instructions():
 > Note `operands()` prints the immediate exactly as LLVM's printer renders
 > it — the raw ×4-scaled displacement (`#12`, `#8`), not a resolved address.
 > The **resolved absolute target** is what `branches()` gives you, which is
-> why the CFG/analysis code (and chapter 4's `BasicBlock::successors()`)
+> why the CFG/analysis code (and chapter 5's `BasicBlock::successors()`)
 > reads from `branches()` rather than trying to parse `operands()`.
 
-Chapter 4 picks up exactly here — `graph` above already has its blocks and
+Chapter 5 picks up exactly here — `graph` above already has its blocks and
 function recovered; we'll query them directly instead of re-disassembling.

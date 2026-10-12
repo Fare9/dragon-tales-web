@@ -1,10 +1,10 @@
 ---
 title: "Functions, Basic Blocks and Instructions"
-weight: 4
+weight: 5
 summary: "Recovering structure from a flat instruction stream"
 ---
 
-Chapter 3 ended with a fully analyzed `Graph` — the ARM64 `foo(x)` example
+Chapter 4 ended with a fully analyzed `Graph` — the ARM64 `foo(x)` example
 disassembled via `analyze()` (Python) / the `Graph`-overload of
 `disassemble()` (C++), with blocks and functions already recovered. This
 chapter is about querying that structure: `Graph`, `Function`, and
@@ -33,7 +33,7 @@ if (!bb.isValid()) { /* 0x1000 isn't a known block start in this graph */ }
 
 ## `Graph`: the container and its query helpers
 
-Beyond `blocks()`/`functions()` (chapter 3) and `get(address)` (instruction
+Beyond `blocks()`/`functions()` (chapter 4) and `get(address)` (instruction
 lookup), `Graph` exposes the raw validity sets that `BasicBlock`/`Function`
 construction checks against:
 
@@ -128,7 +128,7 @@ function body.
 
 ## Querying the running example
 
-Continuing directly from chapter 3's `graph` (the ARM64 `foo(x)` analysis) —
+Continuing directly from chapter 4's `graph` (the ARM64 `foo(x)` analysis) —
 no need to redisassemble:
 
 ```python
@@ -193,6 +193,6 @@ contribute 0 each. Total `edges() == 3`, `numBlocks() == 4`, so
 `Function` and `BasicBlock` are the structures the rest of dragon-tales
 builds on:
 
-- Chapter 5's IGNIL lifter operates **per-block** — `graph.getIGNILBlock(startAddress)` returns the lifted IL for exactly one `BasicBlock`'s worth of code.
-- Chapter 6's LLVM lifter takes a whole `Function` and lifts every block in it, using `successors()` to wire up LLVM basic block terminators.
+- Chapter 6's IGNIL lifter operates **per-block** — `graph.getIGNILBlock(startAddress)` returns the lifted IL for exactly one `BasicBlock`'s worth of code.
+- Chapter 7's LLVM lifter takes a whole `Function` and lifts every block in it, using `successors()` to wire up LLVM basic block terminators.
 - The backward slicer (see the `docs/cpp_api.md` reference and [IDEAS.md](https://github.com/Fare9/dragon-tales/blob/main/docs/manual/IDEAS.md)) walks blocks via `predecessors()`.

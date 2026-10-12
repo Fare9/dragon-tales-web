@@ -1,6 +1,6 @@
 ---
 title: "Assembling Your Code"
-weight: 2
+weight: 3
 summary: "Turning assembly text into raw machine bytes"
 ---
 
@@ -243,7 +243,7 @@ print(raw.hex())
 
 This matches [`example.py`](https://github.com/Fare9/dragon-tales/blob/main/example.py)
 at the repo root. We'll disassemble these exact bytes in the next chapter,
-then follow them through IGNIL and LLVM IR in chapters 5 and 6.
+then follow them through IGNIL and LLVM IR in chapters 6 and 7.
 
 ## RISC-V 32/64
 
@@ -261,7 +261,7 @@ auto bytes = asm_.assemble("addi a0, a0, 1\nret\n");
 ```
 
 > **Scope note:** RISC-V assembly/disassembly is fully supported, but the
-> IGNIL lifter and function/CFG analysis (chapters 4-6) are not yet
+> IGNIL lifter and function/CFG analysis (chapters 5-7) are not yet
 > implemented for RISC-V — see [IDEAS.md](https://github.com/Fare9/dragon-tales/blob/main/docs/manual/IDEAS.md).
 > The examples in the rest of this manual use x86-64 and ARM64, the two
 > architectures with full pipeline support today.

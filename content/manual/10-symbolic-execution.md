@@ -1,10 +1,10 @@
 ---
 title: "Symbolic Execution with Z3"
-weight: 8
+weight: 10
 summary: "solving for inputs, pruning dead branches, and resolving computed jumps"
 ---
 
-Chapters 5 and 6 turned machine code into forms you can *read* — IGNIL, then
+Chapters 6 and 7 turned machine code into forms you can *read* — IGNIL, then
 LLVM IR. This chapter is about the questions reading doesn't answer:
 
 - What input makes this check pass?
@@ -20,7 +20,7 @@ Z3 bitvectors so you can ask.
 
 ## The idea: run the block without knowing its inputs
 
-Chapter 5's IGNIL is already an interpreter's instruction set — `ADD`,
+Chapter 6's IGNIL is already an interpreter's instruction set — `ADD`,
 `LOAD`, `CJMP` and so on, with every value a `Const`, `Reg` or `Temp`. A
 concrete interpreter would give each register a number and step through. A
 *symbolic* one gives some of them a **variable** instead, and each op builds
@@ -46,14 +46,14 @@ would rather an unseeded location read as zero — useful when a block is meant
 to run against a fully specified machine and a gap means you set it up
 wrong.)
 
-Registers are the same descriptors chapter 5 introduced — `dragon::x86::RDI`,
+Registers are the same descriptors chapter 6 introduced — `dragon::x86::RDI`,
 `dragon::arm::X0`. Nothing in the executor is architecture-specific; it only
 ever sees `Reg` offsets, so an ARM64 block runs through the same code.
 
 ## What does this block compute?
 
 Take the smallest possible example — three instructions, disassembled and
-lifted exactly as in chapters 3–5:
+lifted exactly as in chapters 4–6:
 
 ```
 0x1000: 48 31 F8   xor rax, rdi
@@ -106,7 +106,7 @@ solution.value('a')               # 0x1300
 
 The interesting part is what *isn't* in that snippet. The block lifts to **31
 IGNIL ops**, not three — most of them the `CF`/`ZF`/`SF`/`OF` bookkeeping the
-`add` implies (chapter 5 showed the same expansion). None of it gets in the
+`add` implies (chapter 6 showed the same expansion). None of it gets in the
 way, because you are not pattern-matching the ops; you are asking the solver
 about a value:
 
@@ -143,7 +143,8 @@ unsigned int fnv4(const unsigned char *s, unsigned int seed) {
 }
 ```
 
-and pull `.text` out with `objdump` the way chapter 7 does:
+and pull `.text` out with `objdump` the way chapter 9 does (or load it
+directly with chapter 8's loader):
 
 ```
 0f b6 07 31 f0 69 c0 93 01 00 01 0f b6 4f 01 31 c1 69 c1 93 01 00 01
@@ -234,7 +235,7 @@ byte, a range recovered from a preceding bounds check.
 
 ## Which edges of this branch are real?
 
-Chapter 4 built the CFG from branch *targets*. The solver can tell you
+Chapter 5 built the CFG from branch *targets*. The solver can tell you
 something the CFG can't: whether an edge is reachable at all.
 
 ```
@@ -285,7 +286,7 @@ obfuscation.
 
 ## Where does this computed jump go?
 
-The hardest case for chapter 4's CFG recovery is a jump through a table,
+The hardest case for chapter 5's CFG recovery is a jump through a table,
 because the target isn't in the instruction. A bytecode VM's dispatcher is
 the canonical shape: fetch an opcode byte, index a handler table, jump.
 
@@ -397,7 +398,7 @@ The honest limits, beyond the modelling notes above:
   you drive. A loop has to be unrolled by running its body repeatedly, which
   means you need a bound on the trip count.
 - **It inherits the lifter's scope.** Anything IGNIL can't express, the
-  executor can't reason about. An `UNDEF` in the block (chapter 5) becomes a
+  executor can't reason about. An `UNDEF` in the block (chapter 6) becomes a
   free variable, which is safe but uninformative — and [`ToDo/LifterGaps.md`](https://github.com/Fare9/dragon-tales/blob/main/ToDo/LifterGaps.md)
   tracks the forms that produce one.
 - **Blocks come from lifting.** The C and Python APIs expose IGNIL blocks
@@ -408,4 +409,8 @@ The honest limits, beyond the modelling notes above:
 [`examples/cpp/symbolic_execution.cpp`](https://github.com/Fare9/dragon-tales/blob/main/examples/cpp/symbolic_execution.cpp)
 and [`examples/python/symbolic_execution.py`](https://github.com/Fare9/dragon-tales/blob/main/examples/python/symbolic_execution.py)
 run every example in this chapter, plus a couple more.
+
+[Chapter 11](../11-defeating-obfuscation/) puts this engine and the LLVM
+optimizer to work together against real obfuscation — opaque predicates, junk
+code, and mixed boolean-arithmetic.
 

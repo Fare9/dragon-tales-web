@@ -97,6 +97,7 @@ for insn in graph.instructions():
 {{< /compare >}}
 
 If this prints the two instructions back, you're set up correctly. The next
-two chapters look at `Assembler` and `Disassembler` in more depth before
-chapter 4 introduces `Graph`, the structure both snippets above are quietly
-already using under the hood.
+chapter covers `Configuration` — the object both snippets above construct
+first — then chapters 3 and 4 look at `Assembler` and `Disassembler` in more
+depth before chapter 5 introduces `Graph`, the structure both snippets above
+are quietly already using under the hood.
