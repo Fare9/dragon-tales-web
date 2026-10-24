@@ -28,13 +28,13 @@ happened, including the wall the first attempt ran into (Part 8) and what that
 wall turned out to be once the bytecode was explored without a trace (Parts
 9–13, added on September 22). Everything here is generated from the binary
 by the scripts listed at the end; the complete per-handler catalogue (all 256
-handlers, four views each) is in the companion appendix **[`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Dragon%20power%20against%20VMProtect%20-%20Handlers.md)**.
+handlers, four views each) is in the companion appendix **[`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/Dragon%20power%20against%20VMProtect%20-%20Handlers.md)**.
 
 **Companion repo.** Every binary, script, Binary Ninja database and generated
-file referenced below lives in **[Fare9/Dragons-vs-VMs](https://github.com/Fare9/Dragons-vs-VMs)** —
+file referenced below lives in **[Fare9/Dragons-vs-VMs](https://github.com/Fare9/Dragons-vs-VMs/tree/main/Simple-Serial-Check)** —
 the links throughout this post point straight into it.
 
-**Target.** [`serial_check.vmp.exe`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/serial_check.vmp.exe), a tiny x64 crackme with exactly one function
+**Target.** [`serial_check.vmp.exe`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/serial_check.vmp.exe), a tiny x64 crackme with exactly one function
 virtualized (`check_serial`, all other VMProtect protections off for a clean
 study). Its logic: hash a serial and compare to `0xEFD327AD`; the documented key
 is `VMP-2026-DEMO`. Image base `0x140000000`; the VM lives in section `./A(` at
@@ -69,7 +69,7 @@ VM_ENTRY is 70 instructions long. dragon-tales lifts them to 519 IGNIL operation
 after `simplify()` and dead-store elimination with only the VM's own state registers
 declared live, 107 operations remain. Instructions that contributed nothing to those
 107 are junk. Here is the listing with junk removed (the full one is in
-[`post_views.json`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/post_views.json) under `entry`):
+[`post_views.json`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/post_views.json) under `entry`):
 
 ```asm
 0x1400e5000: pushfq                        ; save RFLAGS
@@ -280,13 +280,13 @@ VM_CALL. Section 6 says why.
 
 ## Part 4 — Reading handlers in four views
 
-Each handler in [`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Dragon%20power%20against%20VMProtect%20-%20Handlers.md) has: the capstone listing with junk marked, the
+Each handler in [`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/Dragon%20power%20against%20VMProtect%20-%20Handlers.md) has: the capstone listing with junk marked, the
 IGNIL after simplify+DSE, the optimized LLVM IR, and the symbolic effect (dragon's
 Z3 term, then the z3py-simplified form). Here is how to read them, on real
 handlers.
 
 Below are a few representative handlers. The full set of 256 is in
-**[`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Dragon%20power%20against%20VMProtect%20-%20Handlers.md)**.
+**[`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/Dragon%20power%20against%20VMProtect%20-%20Handlers.md)**.
 
 ### Handler `0x1400e5427` — `POP_VR64`  (opcode slot 0x4f)
 
@@ -402,7 +402,7 @@ R9 (R9)
 ```
 </details>
 
-_Binary Ninja IL: not generated yet — run [`scripts/binja_dump_il.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/binja_dump_il.py) in the BN console, then re-run this script._
+_Binary Ninja IL: not generated yet — run [`scripts/binja_dump_il.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/binja_dump_il.py) in the BN console, then re-run this script._
 
 ---
 
@@ -505,7 +505,7 @@ R9 (R9)
 ```
 </details>
 
-_Binary Ninja IL: not generated yet — run [`scripts/binja_dump_il.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/binja_dump_il.py) in the BN console, then re-run this script._
+_Binary Ninja IL: not generated yet — run [`scripts/binja_dump_il.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/binja_dump_il.py) in the BN console, then re-run this script._
 
 ---
 
@@ -581,7 +581,7 @@ R9 (R9)
 ```
 </details>
 
-_Binary Ninja IL: not generated yet — run [`scripts/binja_dump_il.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/binja_dump_il.py) in the BN console, then re-run this script._
+_Binary Ninja IL: not generated yet — run [`scripts/binja_dump_il.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/binja_dump_il.py) in the BN console, then re-run this script._
 
 ---
 
@@ -911,7 +911,7 @@ R10 (R10)
 ```
 </details>
 
-_Binary Ninja IL: not generated yet — run [`scripts/binja_dump_il.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/binja_dump_il.py) in the BN console, then re-run this script._
+_Binary Ninja IL: not generated yet — run [`scripts/binja_dump_il.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/binja_dump_il.py) in the BN console, then re-run this script._
 
 ---
 
@@ -1151,7 +1151,7 @@ R9 (R9)
 ```
 </details>
 
-_Binary Ninja IL: not generated yet — run [`scripts/binja_dump_il.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/binja_dump_il.py) in the BN console, then re-run this script._
+_Binary Ninja IL: not generated yet — run [`scripts/binja_dump_il.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/binja_dump_il.py) in the BN console, then re-run this script._
 
 ---
 
@@ -1339,7 +1339,7 @@ R15 (R15)
 ```
 </details>
 
-_Binary Ninja IL: not generated yet — run [`scripts/binja_dump_il.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/binja_dump_il.py) in the BN console, then re-run this script._
+_Binary Ninja IL: not generated yet — run [`scripts/binja_dump_il.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/binja_dump_il.py) in the BN console, then re-run this script._
 
 
 ## Part 5 — What symbolizing the VM registers and simplifying with Z3 bought
@@ -1370,7 +1370,7 @@ from the lifted IR alone? Yes, in four concrete ways:
    dragon-tales marks DF undefined after arithmetic (17 existing tests encode that
    behavior, so it was left alone and documented instead), plus undefined PF/AF.
 
-Limits to keep in mind when reading [`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Dragon%20power%20against%20VMProtect%20-%20Handlers.md):
+Limits to keep in mind when reading [`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/Dragon%20power%20against%20VMProtect%20-%20Handlers.md):
 
 - The bytecode bytes at `VIP` are assumed (`0x18, 0x00, 0x12, ...`) so that
   `[rsp + idx]` resolves; `[VM_REGS+0x18]` in an effect means "the virtual register
@@ -1448,13 +1448,13 @@ copy of the handler for each use. After the prologue you can already see the
 program's idioms: `ADD64` followed by `POP_VR64` into a dead register is "add and
 throw the flags away"; `PUSH_VSP64 ; LOAD64` reads a stack slot; the `NOR64`
 sequences are the synthesized AND/OR. The full linear decode is at the top of
-[`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Dragon%20power%20against%20VMProtect%20-%20Handlers.md). Turning it into readable code (symbolic execution of the
+[`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/Dragon%20power%20against%20VMProtect%20-%20Handlers.md). Turning it into readable code (symbolic execution of the
 *bytecode* against this handler table) is the next step of the lab.
 
 
 ## Part 7 — Devirtualization: the running program
 
-Recovered by [`scripts/dt_vm_trace.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/dt_vm_trace.py) running the real VMProtect VM on serial `AB` (733 VM instructions). See Part 3 for the ISA and Part 8 for the LLVM recompilation that turns this stream into clean IR.
+Recovered by [`scripts/dt_vm_trace.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/dt_vm_trace.py) running the real VMProtect VM on serial `AB` (733 VM instructions). See Part 3 for the ISA and Part 8 for the LLVM recompilation that turns this stream into clean IR.
 
 *Read with Part 10 in hand:* the `VM_EXIT operand=0x57` that ends each block
 below is the VM's jump, not an exit (Part 3), and the "loop body" is
@@ -1754,7 +1754,7 @@ The loop body's arithmetic (`SHR`/`SHL` for `<<4`/`>>3`, `NOR`/`NAND` for the XO
 
 ## Part 8 — Recompiling the VM back to LLVM IR
 
-Parts 1-4 proved every handler's semantics and Part 7 read the running VM's opcode stream. This part is the recompiler that turns that stream into clean LLVM IR, and an honest account of the one wall that stands between the pipeline and a fully automatic, push-button devirtualization of the protected binary. Tool: [`scripts/dt_recompile.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/dt_recompile.py).
+Parts 1-4 proved every handler's semantics and Part 7 read the running VM's opcode stream. This part is the recompiler that turns that stream into clean LLVM IR, and an honest account of the one wall that stands between the pipeline and a fully automatic, push-button devirtualization of the protected binary. Tool: [`scripts/dt_recompile.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/dt_recompile.py).
 
 ### The pipeline (built and validated)
 
@@ -1764,14 +1764,14 @@ Devirtualization here is **concolic recompilation**:
 2. **Re-interpret** that opcode sequence with the serial bytes symbolic, propagating value *terms* through a byte-addressed store keyed by the concrete addresses. Pointers stay concrete so loads/stores resolve; only serial-derived values are symbolic. `PUSH_VR`/`POP_VR` become term moves, `ADD`/`SHR`/`SHL` become term nodes, `NOR(a,b)`/`NAND(a,b)` become `~(a|b)` / `~a|~b`, and the final compare's ZF (built into a faithful EFLAGS word) becomes the return. The whole stack machine reduces to one term for `EAX`.
 3. **Lower** the term to `i32 @check_serial_L(ptr %serial)` (serial bytes -> `load i8`), then `opt -O2`.
 
-Steps 2 and 3 are complete and validated: the interpreter's per-opcode rules match the recovered per-handler effects in [`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Dragon%20power%20against%20VMProtect%20-%20Handlers.md) exactly (checked against [`post_views.json`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/post_views.json)), and the term algebra + LLVM lowering are exercised below.
+Steps 2 and 3 are complete and validated: the interpreter's per-opcode rules match the recovered per-handler effects in [`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/Dragon%20power%20against%20VMProtect%20-%20Handlers.md) exactly (checked against [`post_views.json`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/post_views.json)), and the term algebra + LLVM lowering are exercised below.
 
 ### The wall: trace acquisition
 
 Step 1 is where VMProtect fights back, and it is the crux of the whole exercise:
 
 - **dragon (symbolic, faithful):** steps the real VM and stays on the correct path, but its executor is O(n^2) in accumulated state; the protected `check_serial` is tens of thousands of VM instructions even for one character, and a run never finished in practice.
-- **Unicorn (concrete, fast, ~57M instr/s):** runs, but the emulated function does **not terminate** within 400M instructions and its result is independent of the input, while the real [`serial_check.vmp.exe`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/serial_check.vmp.exe) returns instantly. So the emulated environment is missing a check and the VM loops. Hooking `cpuid` and advancing `rdtsc` was not enough; a faithful PEB/TEB, KUSER clock, and integrity-checksum-friendly memory image are needed. This is the well-known VMProtect anti-emulation wall.
+- **Unicorn (concrete, fast, ~57M instr/s):** runs, but the emulated function does **not terminate** within 400M instructions and its result is independent of the input, while the real [`serial_check.vmp.exe`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/serial_check.vmp.exe) returns instantly. So the emulated environment is missing a check and the VM loops. Hooking `cpuid` and advancing `rdtsc` was not enough; a faithful PEB/TEB, KUSER clock, and integrity-checksum-friendly memory image are needed. This is the well-known VMProtect anti-emulation wall.
 
 **What this diagnosis got wrong** (added September 22): both bullets above were
 right about the symptom and wrong about the cause. The executor was not O(n²)
@@ -1781,7 +1781,7 @@ over a table VMProtect's startup code never got to fill. Part 10.1 reads that
 loop off the recovered CFG. Nothing in it is anti-emulation of `check_serial`,
 and no trace was ever needed: Part 9.
 
-So the honest status *was*: **the recompiler is finished; the automatic trace is not.** The two clean ways to feed it a real trace are (a) a faithful VMProtect environment (engineering, not research), or (b) a hardware/DBI trace of the *real* process — Intel PT, Time-Travel Debugging, or a debugger single-stepping [`serial_check.vmp.exe`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/serial_check.vmp.exe) — which runs in the real OS and sidesteps environment fidelity entirely. [`dt_recompile.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/dt_recompile.py) consumes either unchanged.
+So the honest status *was*: **the recompiler is finished; the automatic trace is not.** The two clean ways to feed it a real trace are (a) a faithful VMProtect environment (engineering, not research), or (b) a hardware/DBI trace of the *real* process — Intel PT, Time-Travel Debugging, or a debugger single-stepping [`serial_check.vmp.exe`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/serial_check.vmp.exe) — which runs in the real OS and sidesteps environment fidelity entirely. [`dt_recompile.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/dt_recompile.py) consumes either unchanged.
 
 ### The recompiler back-end, demonstrated on the recovered logic
 
@@ -1796,12 +1796,12 @@ return       (acc_len == 0xEFD327AD)
 Built with the recompiler's own term algebra and lowering (the exact code path step 3 uses), it is verified three ways:
 
 - matches a from-scratch C reference model on **3000/3000** random 8-byte serials;
-- the dash-aware term for the known key `VMP-2026-DEMO` evaluates to **1**, and the real [`serial_check.vmp.exe`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/serial_check.vmp.exe) grants it;
+- the dash-aware term for the known key `VMP-2026-DEMO` evaluates to **1**, and the real [`serial_check.vmp.exe`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/serial_check.vmp.exe) grants it;
 - lowered to LLVM IR and run through `lli`, it agrees with the reference on the recovered 8-char solution.
 
 #### Devirtualized IR (raw)
 
-[`check_serial_devirt.ll`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/check_serial_devirt.ll) — the 69-line function before optimization (stack machine already gone; the term is direct):
+[`check_serial_devirt.ll`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/check_serial_devirt.ll) — the 69-line function before optimization (stack machine already gone; the term is direct):
 
 ```llvm
 ; devirtualized check_serial for 8-byte, dash-free serials
@@ -1955,7 +1955,7 @@ attributes #0 = { mustprogress nofree norecurse nosync nounwind willreturn memor
 
 ### Where this left the analysis, on September 9
 
-- **Done:** VM structure and ISA (Parts 1-3), all 256 handlers' semantics (Part 4 + [`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Dragon%20power%20against%20VMProtect%20-%20Handlers.md)), the running program's opcode stream (Part 7), and the recompiler that turns a stream into verified LLVM IR (Part 8).
+- **Done:** VM structure and ISA (Parts 1-3), all 256 handlers' semantics (Part 4 + [`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/Dragon%20power%20against%20VMProtect%20-%20Handlers.md)), the running program's opcode stream (Part 7), and the recompiler that turns a stream into verified LLVM IR (Part 8).
 - **Blocked only on trace acquisition** — or so it seemed: a full push-button devirtualization of the protected binary needs a complete VM trace, which VMProtect's anti-emulation withholds from a synthetic environment. A real-process trace (option b above) removes the block with no change to the recompiler. *(Superseded: Part 9 devirtualizes the binary from the file alone.)*
 - **Correction to Part 7:** the 220-instruction repeat reported there is an early VM loop in VMProtect's preamble, not the hash body; the hash loop sits after a long integrity section, which is also why the trace is so large.
 
@@ -1971,9 +1971,9 @@ trace is needed.** The protected code can be executed symbolically *exactly as
 it sits in the binary* — the real `VM_ENTRY`, the real dispatcher, the real
 handlers, no VM emulator written — as long as it is never followed along a
 path. The tool is
-[`scripts/vmprotect_full_analysis.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/vmprotect_full_analysis.py),
+[`scripts/vmprotect_full_analysis.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/vmprotect_full_analysis.py),
 about 1900 lines, and the long-form write-up with every number is
-[`FINAL_ANALYSIS.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/FINAL_ANALYSIS.md)
+[`FINAL_ANALYSIS.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/FINAL_ANALYSIS.md)
 in the companion repo. This part is the method; Parts 10–13 are what it found.
 
 The idea in one paragraph: identify every program point by the pair **(native
@@ -2355,7 +2355,7 @@ After the first `opt -O2` the module is already a function, but it is still
 VMProtect's function: the two `cpuid` calls, the `OSBuildNumber` read and the
 table loop survive, because `cpuid` is an external call LLVM cannot see
 through. This is
-[`check_serial.devirt.opt.ll`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/full_analysis_mba/check_serial.devirt.opt.ll):
+[`check_serial.devirt.opt.ll`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/full_analysis_mba/check_serial.devirt.opt.ll):
 
 ```llvm
 define range(i64 0, 2) i64 @check_serial(i64 %arg0, i64 %arg1, i64 %arg2, i64 %arg3) local_unnamed_addr #1 {
@@ -2501,7 +2501,7 @@ upstream. The fix is in two parts, both applied to the Z3 term before it is
 lowered:
 
 - **Hoisting** —
-  [`scripts/concat_hoist.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/concat_hoist.py)
+  [`scripts/concat_hoist.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/concat_hoist.py)
   undoes step 2. `Concat(0_k, Extract(31, k, x))` becomes `x >> k`,
   `Concat(Extract(31-k, 0, x), 0_k)` becomes `x << k`, a concat whose pieces
   are the same bitwise operator over aligned slices becomes that operator over
@@ -2512,7 +2512,7 @@ lowered:
   never reassembles them). It runs on every lowered term, always. With it
   alone LLVM already recovers the `xor`: 59 lines become 40.
 - **An MBA pass at the same seam** —
-  [`scripts/mba_lift.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/mba_lift.py),
+  [`scripts/mba_lift.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/mba_lift.py),
   enabled with `--mba <cobra-cli>`. Every maximal subtree of `~ & | ^ + - *` is
   printed with its other children (shifts, extracts, loads, variables) as
   opaque atoms, handed to `cobra-cli`, parsed back and Z3-verified before it
@@ -2526,7 +2526,7 @@ lowered:
   `opt.exe` exports no symbols for a plugin to bind to.)
 
 The result,
-[`full_analysis_mba/check_serial.function.ll`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/full_analysis_mba/check_serial.function.ll),
+[`full_analysis_mba/check_serial.function.ll`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/full_analysis_mba/check_serial.function.ll),
 in full:
 
 ```llvm
@@ -2597,7 +2597,7 @@ walk of the string are in the clear.
 ### 12.1 A standalone executable
 
 To close the loop, the recovered function is compiled back to a native program.
-[`full_analysis_mba/check_serial.rewritten.ll`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/full_analysis_mba/check_serial.rewritten.ll)
+[`full_analysis_mba/check_serial.rewritten.ll`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/full_analysis_mba/check_serial.rewritten.ll)
 is the function above, marked `noinline` so it stays a function one can find
 in a disassembler, followed by a hand-written `main` that does what
 `serial_check.c`'s does — usage text with no argument, then `check_serial(argv[1])`
@@ -2645,7 +2645,7 @@ granted:
 clang -O2 full_analysis_mba/check_serial.rewritten.ll -o full_analysis_mba/check_serial.recovered.nomba.exe
 ```
 
-[`check_serial.recovered.nomba.exe`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/full_analysis_mba/check_serial.recovered.nomba.exe)
+[`check_serial.recovered.nomba.exe`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/full_analysis_mba/check_serial.recovered.nomba.exe)
 (142 KB, no VMProtect section, no VM) is identical to the **unprotected**
 `serial_check.exe` in exit code and standard output on 199 of 199 serials —
 the 7 chosen ones plus 192 random — and on the no-argument usage path. So the
@@ -2781,59 +2781,59 @@ script can report them. Details: gaps #5, #8 and #9 in
 
 Everything above is reproducible. All of it — the tooling, the binaries, the
 Binary Ninja databases and the generated data — lives in the companion repo
-**[Fare9/Dragons-vs-VMs](https://github.com/Fare9/Dragons-vs-VMs)**, in
-[`scripts/`](https://github.com/Fare9/Dragons-vs-VMs/tree/main/scripts). The
+**[Fare9/Dragons-vs-VMs](https://github.com/Fare9/Dragons-vs-VMs/tree/main/Simple-Serial-Check)**, in
+[`scripts/`](https://github.com/Fare9/Dragons-vs-VMs/tree/main/Simple-Serial-Check/scripts). The
 `dt_*.py` tools additionally need dragon-tales built, with `DRAGON_TALES_PY`
 pointing at its `python/` directory:
 
-- **[`scripts/pe_report.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/pe_report.py)** — dependency-free PE parser (sections, entropy,
+- **[`scripts/pe_report.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/pe_report.py)** — dependency-free PE parser (sections, entropy,
   imports, entry point); imported by every VM tool.
-- **[`scripts/compare.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/compare.py)** — diff a baseline PE against its protected version.
-- **[`scripts/static_handlers.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/static_handlers.py)** — enumerate and classify all 256 handlers
+- **[`scripts/compare.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/compare.py)** — diff a baseline PE against its protected version.
+- **[`scripts/static_handlers.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/static_handlers.py)** — enumerate and classify all 256 handlers
   from the dispatch table with capstone alone (no dragon-tales needed).
-- **[`scripts/dt_symexec_demo.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/dt_symexec_demo.py)** — minimal dragon-tales + Z3 sanity check
+- **[`scripts/dt_symexec_demo.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/dt_symexec_demo.py)** — minimal dragon-tales + Z3 sanity check
   (`proves rax == rdi + rsi`).
-- **[`scripts/dt_solve_check_serial.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/dt_solve_check_serial.py)** — recover a passing serial for the
+- **[`scripts/dt_solve_check_serial.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/dt_solve_check_serial.py)** — recover a passing serial for the
   *unprotected* `check_serial` via loop-unrolled symbolic execution + Z3.
-- **[`scripts/dt_devirt_handler.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/dt_devirt_handler.py)** — lift ONE handler to optimized LLVM IR.
-- **[`scripts/dt_catalog.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/dt_catalog.py)** — batch-lift all 256 handlers, group by
+- **[`scripts/dt_devirt_handler.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/dt_devirt_handler.py)** — lift ONE handler to optimized LLVM IR.
+- **[`scripts/dt_catalog.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/dt_catalog.py)** — batch-lift all 256 handlers, group by
   IR-shape (the first-pass catalogue).
-- **[`scripts/dt_handler_views.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/dt_handler_views.py)** — the generator behind the four-view
+- **[`scripts/dt_handler_views.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/dt_handler_views.py)** — the generator behind the four-view
   catalogue: capstone + IGNIL(simplify+DSE) + LLVM IR + symbolic/Z3, names each
-  handler by its recovered effect. Writes **[`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Dragon%20power%20against%20VMProtect%20-%20Handlers.md)** and
-  [`post_views.json`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/post_views.json).
-- **[`scripts/dt_vm_symexec.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/dt_vm_symexec.py)** — step the *real* protected VM one native
+  handler by its recovered effect. Writes **[`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/Dragon%20power%20against%20VMProtect%20-%20Handlers.md)** and
+  [`post_views.json`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/post_views.json).
+- **[`scripts/dt_vm_symexec.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/dt_vm_symexec.py)** — step the *real* protected VM one native
   instruction at a time (serial symbolic); `symbolize_unmapped_reads=False` + a
   zero low page gets past VMProtect's environment-init reads.
-- **[`scripts/dt_vm_trace.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/dt_vm_trace.py)** — concrete VM instruction stream of
+- **[`scripts/dt_vm_trace.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/dt_vm_trace.py)** — concrete VM instruction stream of
   `check_serial`.
-- **[`scripts/dt_recompile.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/dt_recompile.py)** — the recompiler: concolic interpreter +
+- **[`scripts/dt_recompile.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/dt_recompile.py)** — the recompiler: concolic interpreter +
   faithful EFLAGS + term→LLVM lowering. `--demo` builds, verifies and lowers the
-  recovered logic. Writes [`check_serial_devirt.ll`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/check_serial_devirt.ll) / [`.opt.ll`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/check_serial_devirt.opt.ll).
-- **[`scripts/binja_rename_handlers.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/binja_rename_handlers.py)** — paste into the Binary Ninja
+  recovered logic. Writes [`check_serial_devirt.ll`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/check_serial_devirt.ll) / [`.opt.ll`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/check_serial_devirt.opt.ll).
+- **[`scripts/binja_rename_handlers.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/binja_rename_handlers.py)** — paste into the Binary Ninja
   console to rename all 256 handlers (plus the entry, fetch/dispatch, guard and
   handler table) to meaningful names, with a comment on each giving its opcode
   class, slots, operand length, VM_SP delta and exit.
-- **[`scripts/binja_dump_il.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/binja_dump_il.py)** — Binary Ninja console script to dump
+- **[`scripts/binja_dump_il.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/binja_dump_il.py)** — Binary Ninja console script to dump
   LLIL/MLIL/HLIL per handler for the fifth view.
 
-- **[`scripts/vmprotect_full_analysis.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/vmprotect_full_analysis.py)** — Parts 9–13 in one file: the
+- **[`scripts/vmprotect_full_analysis.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/vmprotect_full_analysis.py)** — Parts 9–13 in one file: the
   `(pc, VIP)` exploration, Z3 condition simplification, environment synthesis,
   the LLVM lowering, `opt` / `llvm-link` / `lli`, and the CFG report. Writes
-  [`full_analysis/`](https://github.com/Fare9/Dragons-vs-VMs/tree/main/full_analysis)
-  (and, with `--mba`, [`full_analysis_mba/`](https://github.com/Fare9/Dragons-vs-VMs/tree/main/full_analysis_mba)):
+  [`full_analysis/`](https://github.com/Fare9/Dragons-vs-VMs/tree/main/Simple-Serial-Check/full_analysis)
+  (and, with `--mba`, [`full_analysis_mba/`](https://github.com/Fare9/Dragons-vs-VMs/tree/main/Simple-Serial-Check/full_analysis_mba)):
   `.vmcfg.json` / `.vmcfg.dot`, `.devirt.ll`, `.devirt.opt.ll`,
   `.function.ll` / `.function.dot`, and `.cfg.md` with both CFGs as Mermaid.
-- **[`scripts/concat_hoist.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/concat_hoist.py)** — the Z3-term normalizer of Part 12: whole-word
+- **[`scripts/concat_hoist.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/concat_hoist.py)** — the Z3-term normalizer of Part 12: whole-word
   shifts and bitwise operators back from Z3's concat-of-slices.
-- **[`scripts/mba_lift.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/scripts/mba_lift.py)** — the MBA pass of Part 12: bitwise/arithmetic skeletons
+- **[`scripts/mba_lift.py`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/scripts/mba_lift.py)** — the MBA pass of Part 12: bitwise/arithmetic skeletons
   to `cobra-cli` and back, every rewrite Z3-verified.
-  [`tools/cobra-cli.exe`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/tools/cobra-cli.exe)
+  [`tools/cobra-cli.exe`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/tools/cobra-cli.exe)
   is a Windows build of CoBRA (build steps in the repo's `DEPENDENCIES.md`).
-- **[`FINAL_ANALYSIS.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/FINAL_ANALYSIS.md)** — the long form of Parts 9–13, with every number
+- **[`FINAL_ANALYSIS.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/FINAL_ANALYSIS.md)** — the long form of Parts 9–13, with every number
   and the reasoning behind each design choice.
 
-**Companion file:** **[`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Dragon%20power%20against%20VMProtect%20-%20Handlers.md)** — all 256 handlers, four views each,
+**Companion file:** **[`Dragon power against VMProtect - Handlers.md`](https://github.com/Fare9/Dragons-vs-VMs/blob/main/Simple-Serial-Check/Dragon%20power%20against%20VMProtect%20-%20Handlers.md)** — all 256 handlers, four views each,
 plus the opcode summary and the static bytecode decode at VIP.
 
 **Where it stands now.** The VM is understood (Parts 1–6), the function was
